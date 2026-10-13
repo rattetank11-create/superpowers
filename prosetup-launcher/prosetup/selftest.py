@@ -17,18 +17,39 @@ from pathlib import Path
 
 
 def run_selftest(report_path: str) -> int:
+    """Никогда не бросает исключений: в собранном EXE без консоли это показало бы
+    модальное окно PyInstaller, и автоматическая проверка зависла бы."""
+    try:
+        return _run(report_path)
+    except BaseException:
+        try:
+            Path(report_path).write_text("FAIL  selftest crashed:\n" + traceback.format_exc(), encoding="utf-8")
+        except OSError:
+            pass
+        return 2
+
+
+def _run(report_path: str) -> int:
     lines: list[str] = []
     failures = 0
 
+    def flush() -> None:
+        Path(report_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
     def check(name: str, func) -> None:
         nonlocal failures
+        lines.append(f"...   {name}")
+        flush()  # если шаг зависнет, в отчёте будет видно, на каком
         try:
             detail = func()
-            lines.append(f"PASS  {name}: {detail}")
+            lines[-1] = f"PASS  {name}: {detail}"
         except Exception:
             failures += 1
-            lines.append(f"FAIL  {name}:\n{traceback.format_exc()}")
+            lines[-1] = f"FAIL  {name}:\n{traceback.format_exc()}"
+        flush()
 
+    lines.append("START")
+    flush()
     from PySide6.QtWidgets import QApplication
 
     from . import detect, winapi
@@ -108,5 +129,5 @@ def run_selftest(report_path: str) -> int:
         check(name, func)
 
     lines.append(f"RESULT: {'OK' if failures == 0 else f'{failures} FAILED'}")
-    Path(report_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    flush()
     return 0 if failures == 0 else 1

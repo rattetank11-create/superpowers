@@ -17,6 +17,7 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: prosetup-launcher
@@ -45,8 +46,14 @@ jobs:
         shell: pwsh
         run: |
           $report = Join-Path $env:RUNNER_TEMP "selftest.txt"
-          $p = Start-Process -FilePath "dist\ProSetupLauncher.exe" -ArgumentList "--selftest", "`"$report`"" -Wait -PassThru
-          if (Test-Path $report) { Get-Content $report -Encoding UTF8 } else { Write-Host "Отчёт не создан" }
+          $p = Start-Process -FilePath "dist\ProSetupLauncher.exe" -ArgumentList "--selftest", "`"$report`"" -PassThru
+          if (-not $p.WaitForExit(120000)) {
+            Write-Host "Self-test timed out, killing"
+            Get-Process ProSetupLauncher -ErrorAction SilentlyContinue | Stop-Process -Force
+            if (Test-Path $report) { Get-Content $report -Encoding UTF8 }
+            exit 1
+          }
+          if (Test-Path $report) { Get-Content $report -Encoding UTF8 } else { Write-Host "No report written" }
           Write-Host "Exit code: $($p.ExitCode)"
           if ($p.ExitCode -ne 0) { exit 1 }
 
