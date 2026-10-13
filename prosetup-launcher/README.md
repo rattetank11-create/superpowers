@@ -8,7 +8,7 @@
 | 1 | **Steam** | `steam.exe` (путь из реестра Valve / стандартные папки / вручную) | процесс `steam.exe` |
 | 2 | **Настройки мыши Windows** | `control.exe main.cpl` (то же, что Win + R → `main.cpl`) | открыто окно «Свойства: Мышь» |
 | 3 | **FACEIT Anti-Cheat** | `faceitclient.exe` (обычно `C:\Program Files\FACEIT AC\`); Windows покажет запрос UAC | процесс `faceitclient.exe` |
-| 4 | **FACEIT в браузере** | https://www.faceit.com/ в браузере по умолчанию | время последнего открытия |
+| 4 | **FACEIT в браузере** | https://www.faceit.com/ в Google Chrome (если не найден — в браузере по умолчанию; выбирается в настройках) | время последнего открытия |
 | 5 | **Logitech G HUB** | `lghub.exe` (обычно `C:\Program Files\LGHUB\`) | процесс `lghub.exe` |
 
 Приложение **только открывает программы и окна**. Оно не меняет DPI, чувствительность

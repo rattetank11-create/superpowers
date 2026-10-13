@@ -64,7 +64,7 @@ ACTIONS: tuple[ActionDef, ...] = (
     ActionDef(
         id="faceit_web",
         title="FACEIT в браузере",
-        subtitle="faceit.com в браузере по умолчанию",
+        subtitle="faceit.com в Chrome или браузере по умолчанию",
         monogram="FC",
         color="#c84300",
         kind="url",

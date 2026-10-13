@@ -167,6 +167,30 @@ QLineEdit, QDoubleSpinBox {{
     selection-background-color: {ACCENT};
 }}
 QLineEdit:focus, QDoubleSpinBox:focus {{ border-color: {ACCENT}; }}
+QDoubleSpinBox {{ padding-right: 20px; }}
+QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
+    subcontrol-origin: border; width: 18px; border: none; background: transparent;
+}}
+QDoubleSpinBox::up-button {{ subcontrol-position: top right; }}
+QDoubleSpinBox::down-button {{ subcontrol-position: bottom right; }}
+QDoubleSpinBox::up-arrow {{
+    width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-bottom: 5px solid {MUTED};
+}}
+QDoubleSpinBox::down-arrow {{
+    width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 5px solid {MUTED};
+}}
+QDoubleSpinBox::up-arrow:hover {{ border-bottom-color: {ACCENT}; }}
+QDoubleSpinBox::down-arrow:hover {{ border-top-color: {ACCENT}; }}
+QComboBox {{
+    background: #0f1013; border: 1px solid #2a2d33; border-radius: 7px; padding: 6px 10px; min-width: 220px;
+}}
+QComboBox:hover, QComboBox:focus {{ border-color: {ACCENT}; }}
+QComboBox::drop-down {{ border: none; width: 22px; }}
+QComboBox QAbstractItemView {{
+    background: #16171b; border: 1px solid #2a2d33; selection-background-color: {ACCENT}; outline: none;
+}}
 QLabel#ok {{ color: {GREEN}; font-size: 8.5pt; }}
 QLabel#bad {{ color: {RED}; font-size: 8.5pt; }}
 QLabel#info {{ color: {MUTED}; font-size: 8.5pt; }}

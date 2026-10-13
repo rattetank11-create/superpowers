@@ -21,6 +21,7 @@ PATH_ACTION_IDS = ("steam", "faceit_ac", "ghub")
 DEFAULTS: dict[str, Any] = {
     "enabled": {aid: True for aid in ACTION_IDS},
     "paths": {aid: "" for aid in PATH_ACTION_IDS},
+    "browser": "chrome",          # "chrome" или "default" (браузер по умолчанию)
     "launch_delay": 1.5,          # пауза между действиями сетапа, секунды
     "close_to_tray": True,        # крестик окна сворачивает в трей
     "notifications": True,        # уведомления об успешном запуске
@@ -98,6 +99,8 @@ class Settings:
             for aid in PATH_ACTION_IDS:
                 if isinstance(paths.get(aid), str):
                     data["paths"][aid] = paths[aid].strip()
+        if raw.get("browser") in ("chrome", "default"):
+            data["browser"] = raw["browser"]
         delay = raw.get("launch_delay")
         if isinstance(delay, (int, float)) and not isinstance(delay, bool):
             data["launch_delay"] = float(min(max(delay, 0.0), 10.0))

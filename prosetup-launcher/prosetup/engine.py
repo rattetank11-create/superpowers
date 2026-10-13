@@ -89,7 +89,11 @@ class Engine:
     def describe_target(self, action_id: str) -> str:
         action = ACTIONS_BY_ID[action_id]
         if action.kind == "url":
-            return FACEIT_URL
+            if self.settings["browser"] == "chrome":
+                if self.detected_path("chrome"):
+                    return f"Chrome · {FACEIT_URL}"
+                return f"Chrome не найден → браузер по умолчанию · {FACEIT_URL}"
+            return f"Браузер по умолчанию · {FACEIT_URL}"
         if action.kind == "cpl":
             return "control.exe main.cpl" if detect.detect_mouse_cpl() else "main.cpl не найден в System32"
         resolved = self.resolve_path(action_id)
@@ -160,7 +164,7 @@ class Engine:
             opened = self._opened_at.get(action.id)
         if opened:
             return ActionStatus(RUNNING, "Открыто", "Последнее открытие: " + time.strftime("%H:%M:%S", time.localtime(opened)))
-        return ActionStatus(IDLE, "Готово", "Откроется в браузере по умолчанию")
+        return ActionStatus(IDLE, "Готово", "Откроется: " + self.describe_target(action.id))
 
     def pop_timeouts(self) -> list[str]:
         with self._lock:
@@ -219,10 +223,22 @@ class Engine:
         return LaunchResult(True, False, action.success_text)
 
     def _launch_url(self, action: ActionDef) -> LaunchResult:
-        winapi.shell_open(FACEIT_URL)
+        message = action.success_text
+        chrome = self.detected_path("chrome") if self.settings["browser"] == "chrome" else None
+        if chrome and not _is_file(chrome):
+            self.redetect("chrome")
+            chrome = self.detected_path("chrome")
+        if chrome:
+            # Если Chrome уже открыт, сайт откроется новой вкладкой
+            winapi.shell_open(chrome, f'"{FACEIT_URL}"', cwd=str(Path(chrome).parent))
+            message = "Сайт FACEIT открыт в Chrome"
+        else:
+            winapi.shell_open(FACEIT_URL)
+            if self.settings["browser"] == "chrome":
+                message = "Chrome не найден — сайт FACEIT открыт в браузере по умолчанию"
         with self._lock:
             self._opened_at[action.id] = time.time()
-        return LaunchResult(True, False, action.success_text)
+        return LaunchResult(True, False, message)
 
 
 def _is_file(path: str) -> bool:

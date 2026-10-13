@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
+    QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFileDialog, QFrame,
     QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout,
 )
 
@@ -137,6 +137,20 @@ class SettingsDialog(QDialog):
         box.setContentsMargins(14, 12, 14, 12)
         box.setSpacing(10)
 
+        browser_row = QHBoxLayout()
+        browser_row.addWidget(QLabel("Браузер для сайта FACEIT:"))
+        self.browser = QComboBox()
+        chrome = engine.detected_path("chrome")
+        self.browser.addItem("Google Chrome" + ("" if chrome else " (не найден — будет браузер по умолчанию)"), "chrome")
+        self.browser.addItem("Браузер по умолчанию Windows", "default")
+        self.browser.setCurrentIndex(max(0, self.browser.findData(settings["browser"])))
+        self.browser.setCursor(Qt.PointingHandCursor)
+        if chrome:
+            self.browser.setToolTip(chrome)
+        browser_row.addWidget(self.browser)
+        browser_row.addStretch(1)
+        box.addLayout(browser_row)
+
         delay_row = QHBoxLayout()
         delay_row.addWidget(QLabel("Пауза между действиями сетапа:"))
         self.delay = QDoubleSpinBox()
@@ -144,9 +158,7 @@ class SettingsDialog(QDialog):
         self.delay.setSingleStep(0.5)
         self.delay.setDecimals(1)
         self.delay.setSuffix(" с")
-        self.delay.setButtonSymbols(QDoubleSpinBox.NoButtons)
-        self.delay.setMinimumWidth(80)
-        self.delay.setToolTip("От 0 до 10 секунд; колесо мыши или стрелки клавиатуры меняют значение")
+        self.delay.setMinimumWidth(90)
         self.delay.setValue(float(settings["launch_delay"]))
         delay_row.addWidget(self.delay)
         delay_row.addStretch(1)
@@ -196,6 +208,7 @@ class SettingsDialog(QDialog):
             return
         for row in self.rows:
             self.settings.set_path(row.action.id, row.edit.text().strip())
+        self.settings["browser"] = self.browser.currentData()
         self.settings["launch_delay"] = float(self.delay.value())
         self.settings["close_to_tray"] = self.close_to_tray.isChecked()
         self.settings["notifications"] = self.notifications.isChecked()

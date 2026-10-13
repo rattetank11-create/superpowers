@@ -164,6 +164,21 @@ def detect_ghub() -> str | None:
     return _first_file(candidates)
 
 
+def detect_chrome() -> str | None:
+    candidates: list[str] = []
+    if IS_WINDOWS:
+        app_paths = r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe"
+        for root in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            value = _reg_value(root, app_paths, "")
+            if value:
+                candidates.append(value.strip('"'))
+    candidates += [str(pf / "Google" / "Chrome" / "Application" / "chrome.exe") for pf in _program_files()]
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        candidates.append(str(Path(local) / "Google" / "Chrome" / "Application" / "chrome.exe"))
+    return _first_file(candidates)
+
+
 def detect_mouse_cpl() -> str | None:
     system_root = os.environ.get("SystemRoot") or r"C:\Windows"
     return _first_file([str(Path(system_root) / "System32" / "main.cpl")])
@@ -179,6 +194,7 @@ DETECTORS = {
     "steam": detect_steam,
     "faceit_ac": detect_faceit_ac,
     "ghub": detect_ghub,
+    "chrome": detect_chrome,
 }
 
 
