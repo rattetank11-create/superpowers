@@ -201,7 +201,8 @@ class Engine:
         running = set(winapi.list_processes().values())
         if self._process_names(action) & running:
             return LaunchResult(True, True, action.skipped_text)
-        winapi.shell_open(resolved.path, cwd=str(Path(resolved.path).parent))
+        # Файл уже проверен выше; quiet=False — чтобы Windows могла показать запрос UAC
+        winapi.shell_open(resolved.path, cwd=str(Path(resolved.path).parent), quiet=False)
         with self._lock:
             self._pending[action.id] = time.monotonic()
         log.info("Запущен %s: %s", action.id, resolved.path)

@@ -80,6 +80,7 @@ if IS_WINDOWS:
     shell32.ShellExecuteExW.restype = wintypes.BOOL
 
     SEE_MASK_NOASYNC = 0x00000100
+    SEE_MASK_FLAG_NO_UI = 0x00000400
     SW_SHOWNORMAL = 1
     SW_RESTORE = 9
 
@@ -211,18 +212,21 @@ def bring_to_front(hwnd: int) -> None:
 # ---------------------------------------------------------------------------
 # Запуск
 # ---------------------------------------------------------------------------
-def shell_open(target: str, params: str | None = None, cwd: str | None = None) -> None:
+def shell_open(target: str, params: str | None = None, cwd: str | None = None,
+               quiet: bool = True) -> None:
     """Открыть программу, файл или URL так же, как это делает Проводник/Win+R.
 
-    ShellExecuteEx корректно показывает запрос UAC для программ, которым нужны
-    права администратора (например, FACEIT Anti-Cheat).
+    quiet=True запрещает Windows показывать собственные модальные окна ошибок
+    (иначе поток запуска ждал бы, пока их закроют) — ошибку показываем сами.
+    quiet=False используется для уже проверенных .exe: так запрос UAC для
+    программ с правами администратора (FACEIT Anti-Cheat) гарантированно появится.
     """
     if not IS_WINDOWS:
         _dev_open(target, params, cwd)
         return
     info = SHELLEXECUTEINFOW()
     info.cbSize = ctypes.sizeof(SHELLEXECUTEINFOW)
-    info.fMask = SEE_MASK_NOASYNC
+    info.fMask = SEE_MASK_NOASYNC | (SEE_MASK_FLAG_NO_UI if quiet else 0)
     info.hwnd = None
     info.lpVerb = "open"
     info.lpFile = target
