@@ -105,6 +105,30 @@ QPushButton#cardTool {{
 QPushButton#cardTool:hover {{ color: white; border-color: #4a4e57; }}
 QPushButton#cardTool:pressed {{ background: #141518; }}
 
+QPushButton#tab {{
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 10px;
+    color: {MUTED};
+    font-family: {HEADING_FONT};
+    font-size: 9.5pt;
+    font-weight: 700;
+}}
+QPushButton#tab:hover {{ color: {TEXT}; }}
+QPushButton#tab:checked {{ color: white; border-bottom-color: {ACCENT}; }}
+
+QFrame#notice {{
+    background: rgba(255, 176, 32, 0.07);
+    border: 1px solid rgba(255, 176, 32, 0.35);
+    border-radius: 10px;
+}}
+QLabel#noticeText {{ color: #e8cf9c; font-size: 9pt; }}
+QFrame#settingRow {{ background: #111216; border: 1px solid #22252b; border-radius: 10px; }}
+QLabel#rowTitle {{ font-weight: 700; font-size: 10.5pt; }}
+QLabel#steps {{ color: #c3c7ce; font-size: 9pt; }}
+QLabel#devices {{ font-size: 9.5pt; }}
+
 QFrame#card {{
     background: {CARD};
     border: 1px solid {BORDER};

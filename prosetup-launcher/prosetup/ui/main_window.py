@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QByteArray, QThread, QTimer, Qt
 from PySide6.QtGui import QAction, QFont
 from PySide6.QtWidgets import (
-    QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QMainWindow, QMenu,
+    QFileDialog, QFrame, QGridLayout, QStackedWidget, QHBoxLayout, QLabel, QMainWindow, QMenu,
     QMessageBox, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QSystemTrayIcon,
     QVBoxLayout, QWidget,
 )
@@ -21,6 +21,7 @@ from ..engine import Engine
 from ..worker import LaunchWorker
 from . import theme
 from .icon import app_icon, draw_icon
+from .gaming_page import GamingPage
 from .settings_dialog import SettingsDialog
 from .toast import ToastManager
 from .widgets import ActionCard, GlowButton
@@ -150,16 +151,23 @@ class MainWindow(QMainWindow):
         hero_layout.addLayout(status_row)
         outer.addWidget(hero)
 
-        # --- заголовок секции
+        # --- вкладки: действия сетапа / My Gaming Setup
         section = QHBoxLayout()
-        section_title = QLabel("ДЕЙСТВИЯ СЕТАПА")
-        section_title.setObjectName("sectionTitle")
-        f = section_title.font()
-        f.setLetterSpacing(QFont.AbsoluteSpacing, 1.5)
-        section_title.setFont(f)
+        section.setSpacing(6)
+        self.tab_buttons: list[QPushButton] = []
+        for index, text in enumerate(("ДЕЙСТВИЯ СЕТАПА", "MY GAMING SETUP")):
+            tab = QPushButton(text)
+            tab.setObjectName("tab")
+            tab.setCheckable(True)
+            tab.setCursor(Qt.PointingHandCursor)
+            f = tab.font()
+            f.setLetterSpacing(QFont.AbsoluteSpacing, 1.2)
+            tab.setFont(f)
+            tab.clicked.connect(lambda _=False, i=index: self.show_tab(i))
+            section.addWidget(tab)
+            self.tab_buttons.append(tab)
         self.section_hint = QLabel("Переключатель — включить в сетап  ·  статусы обновляются автоматически")
         self.section_hint.setObjectName("hint")
-        section.addWidget(section_title)
         section.addStretch(1)
         section.addWidget(self.section_hint)
         outer.addLayout(section)
@@ -180,8 +188,26 @@ class MainWindow(QMainWindow):
         self.scroll.setWidgetResizable(True)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll.setWidget(self.cards_host)
-        outer.addWidget(self.scroll, 1)
+
+        self.gaming_page = GamingPage(self.engine)
+        self.gaming_page.notify.connect(self.notify)
+        self.gaming_page.launch_requested.connect(self.launch_single)
+        self.pages = QStackedWidget()
+        self.pages.addWidget(self.scroll)
+        self.pages.addWidget(self.gaming_page)
+        outer.addWidget(self.pages, 1)
+        self.show_tab(0)
         self._reflow(force=True)
+
+    def show_tab(self, index: int) -> None:
+        self.pages.setCurrentIndex(index)
+        for i, tab in enumerate(self.tab_buttons):
+            tab.setChecked(i == index)
+        self.section_hint.setText(
+            "Переключатель — включить в сетап  ·  статусы обновляются автоматически" if index == 0
+            else "Мышь и клавиатура Logitech · CS2")
+        if index == 1:
+            self.gaming_page.refresh()
 
     def _reflow(self, force: bool = False) -> None:
         """2 колонки на широком окне, 1 — на узком; компактная шапка на маленьком."""
@@ -330,6 +356,8 @@ class MainWindow(QMainWindow):
         self._thread = None
         self._set_busy(False)
         self.refresh_statuses()
+        if self.pages.currentIndex() == 1:
+            self.gaming_page.refresh()
 
     # =========================================================== настройки
     def browse_path(self, action_id: str) -> None:

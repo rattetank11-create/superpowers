@@ -27,6 +27,7 @@ DEFAULTS: dict[str, Any] = {
     "notifications": True,        # уведомления об успешном запуске
     "minimize_after_launch": False,
     "tray_hint_shown": False,
+    "gaming": {},                 # отметки пользователя в My Gaming Setup
     "window_geometry": "",
 }
 
@@ -107,6 +108,14 @@ class Settings:
         for key in ("close_to_tray", "notifications", "minimize_after_launch", "tray_hint_shown"):
             if isinstance(raw.get(key), bool):
                 data[key] = raw[key]
+        gaming = raw.get("gaming")
+        if isinstance(gaming, dict):
+            for key, rec in gaming.items():
+                if (isinstance(key, str) and isinstance(rec, dict)
+                        and rec.get("state") in ("applied", "unsupported")
+                        and isinstance(rec.get("device"), str)
+                        and isinstance(rec.get("at"), (int, float))):
+                    data["gaming"][key] = {"state": rec["state"], "device": rec["device"], "at": float(rec["at"])}
         if isinstance(raw.get("window_geometry"), str):
             data["window_geometry"] = raw["window_geometry"]
         return data

@@ -79,6 +79,14 @@ def _run(report_path: str) -> int:
         assert detect.detect_mouse_cpl(), "main.cpl не найден"
         return ", ".join(f"{k}={v or 'нет'}" for k, v in found.items()) + ", main.cpl найден"
 
+    def setupapi():
+        from . import devices
+        total = devices.count_present_devices()
+        assert total > 0, "SetupAPI не вернул ни одного устройства"
+        found = devices.list_devices()
+        names = ", ".join(f"{d.display_name} ({d.key})" for d in found) or "игровых устройств нет"
+        return f"{total} устройств в системе; {names}"
+
     def windows_enum():
         procs = winapi.list_processes()
         winapi.find_dialogs(set(procs), ("mouse", "мыш"))
@@ -122,6 +130,7 @@ def _run(report_path: str) -> int:
         ("Список процессов (tasklist)", tasklist_fallback),
         ("Автоопределение путей (реестр)", detection),
         ("Перебор окон", windows_enum),
+        ("Устройства (SetupAPI)", setupapi),
         ("ShellExecuteEx", shell_execute),
         ("Ошибка для несуществующего файла", shell_error),
         ("Главное окно, статусы, настройки", ui_and_engine),
