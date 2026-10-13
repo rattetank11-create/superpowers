@@ -17,10 +17,10 @@ def main() -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     if not draw_icon(256).save(str(out), "ICO"):
         # запасной вариант — PNG, PyInstaller 6 сам конвертирует его через Pillow
-        print("ICO не поддерживается этой сборкой Qt, сохраняю PNG", file=sys.stderr)
+        print("ICO is not supported by this Qt build, saved PNG instead", file=sys.stderr)
         draw_icon(256).save(str(out.with_suffix(".png")), "PNG")
         return 2
-    print(f"Иконка сохранена: {out}")
+    print(f"Icon saved: {out}")  # ASCII: консоль Windows может быть не в UTF-8
     return 0
 
 
