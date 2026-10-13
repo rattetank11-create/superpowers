@@ -6,6 +6,7 @@ import copy
 import json
 import logging
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -29,11 +30,38 @@ DEFAULTS: dict[str, Any] = {
 }
 
 
+_data_dir: Path | None = None
+
+
+def _portable_dir() -> Path | None:
+    """Собранный EXE хранит настройки рядом с собой (папка ProSetupLauncher-data).
+
+    Так настройки переживают очистку профиля в компьютерном клубе и ездят
+    вместе с EXE на флешке. Если папка недоступна для записи — используется %APPDATA%.
+    """
+    if not getattr(sys, "frozen", False):
+        return None
+    path = Path(sys.executable).resolve().parent / f"{APP_ID}-data"
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write-test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return path
+    except OSError:
+        return None
+
+
 def app_data_dir() -> Path:
-    base = os.environ.get("APPDATA") or str(Path.home() / ".config")
-    path = Path(base) / APP_ID
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    global _data_dir
+    if _data_dir is None:
+        path = _portable_dir()
+        if path is None:
+            base = os.environ.get("APPDATA") or str(Path.home() / ".config")
+            path = Path(base) / APP_ID
+            path.mkdir(parents=True, exist_ok=True)
+        _data_dir = path
+    return _data_dir
 
 
 class Settings:

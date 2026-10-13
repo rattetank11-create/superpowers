@@ -72,6 +72,12 @@ def run() -> int:
     app.setStyle("Fusion")
     app.setStyleSheet(STYLESHEET)
 
+    if "--selftest" in sys.argv:
+        from .selftest import run_selftest
+        idx = sys.argv.index("--selftest")
+        report = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else str(app_data_dir() / "selftest.txt")
+        return run_selftest(report)
+
     if _activate_existing_instance():
         log.info("Лаунчер уже запущен — активировано существующее окно")
         return 0
