@@ -1,11 +1,25 @@
-# Optional map image
+# Map assets
 
-Drop a top-down radar image named `de_mirage_radar.png` (or `.jpg`, or `mirage.png`)
-into this folder and FACEFUNNY draws it under the stylised layout.
+| File | What it is |
+|---|---|
+| `source/mirage_radar_source.webp` | The original radar image (input) |
+| `mirage_texture.png` | The re-textured map drawn by the app |
+| `mirage_mask.txt` | 160×160 walkability grid used for path finding |
 
-The image is never downloaded: only a local file is used. If it is missing or
-cannot be decoded, the app falls back to its own built-in Mirage scheme.
+Both generated files come from `tools/build_map_assets.py`:
 
-Markers follow the built-in layout (`app/map_data.py`), so a third-party image
-will only line up if it matches that layout; the built-in outlines stay visible
-on top at reduced opacity to keep the paths readable.
+```sh
+pip install -r requirements-dev.txt
+python tools/build_map_assets.py                 # uses source/mirage_radar_source.webp
+python tools/build_map_assets.py other_radar.png # or another top-down radar image
+```
+
+The tool crops away the A–P / 1–17 grid labels, finds the floor (anything brighter
+than the near-black background), recolours it into the app's dark navy palette
+(keeping fine detail such as crates and steps), adds the outline glow and writes
+the walkability grid. Nothing is ever downloaded.
+
+Spawn points, sites and lane points for this image live in
+`app/map_data.py` (`textured_layout()`). If you rebuild from a different image,
+adjust them too. If the assets are missing or broken, the app falls back to its
+built-in stylised layout automatically.

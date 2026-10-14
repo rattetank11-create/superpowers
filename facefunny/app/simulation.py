@@ -22,6 +22,7 @@ SIM_DT = 1.0 / SIM_HZ
 MAX_STEPS_PER_FRAME = 8  # prevents a "spiral of death" after a long stall
 
 ARRIVE_RADIUS = 0.012
+WALL_MARGIN = 0.004
 TRAIL_LENGTH = 26
 TRAIL_EVERY_TICKS = 4
 
@@ -68,7 +69,7 @@ class Player:
             return self.route[self.route_index]
         return None
 
-    def place_at_spawn(self) -> None:
+    def place_at_spawn(self, face: Point) -> None:
         self.x, self.y = self.spawn
         self.prev_x, self.prev_y = self.spawn
         self.speed = 0.0
@@ -80,21 +81,20 @@ class Player:
         self.hold_timer = 0.0
         self.stuck_timer = 0.0
         self.trail.clear()
-        # Face roughly towards the A site.
-        ax, ay = map_data.A_SITE.center
-        self.heading = math.atan2(ay - self.y, ax - self.x)
+        self.heading = math.atan2(face[1] - self.y, face[0] - self.x)
 
 
 class Simulation:
-    def __init__(self, seed: Optional[int] = None) -> None:
+    def __init__(self, seed: Optional[int] = None, layout: Optional[map_data.Layout] = None) -> None:
+        self.layout = layout or map_data.load_layout()
         self.rng = random.Random(seed)
         self.state = SimState.IDLE
         self.players: List[Player] = []
         self._accumulator = 0.0
         self._tick = 0
-        for i, spawn in enumerate(map_data.CT_SPAWN_POINTS):
+        for i, spawn in enumerate(self.layout.ct_spawns):
             self.players.append(Player(Team.CT, i + 1, spawn))
-        for i, spawn in enumerate(map_data.T_SPAWN_POINTS):
+        for i, spawn in enumerate(self.layout.t_spawns):
             self.players.append(Player(Team.T, i + 1, spawn))
         self.reset()
 
@@ -102,7 +102,7 @@ class Simulation:
     def reset(self) -> None:
         """Return every marker to its base and stop the movement."""
         for p in self.players:
-            p.place_at_spawn()
+            p.place_at_spawn(self.layout.a_site.center)
         self.state = SimState.IDLE
         self._accumulator = 0.0
         self._tick = 0
@@ -169,43 +169,33 @@ class Simulation:
             p.prev_x, p.prev_y = p.x, p.y
 
     # ------------------------------------------------------------------ routing
-    def _jittered(self, point: Point, prev: Optional[Point], radius: float) -> Point:
+    def _jittered(self, point: Point, radius: float) -> Point:
         for _ in range(12):
             cand = (
                 point[0] + self.rng.uniform(-radius, radius),
                 point[1] + self.rng.uniform(-radius, radius),
             )
-            if map_data.is_walkable(*cand, margin=0.004) and (
-                prev is None or map_data.segment_walkable(prev, cand, margin=0.002)
-            ):
+            if self.layout.is_clear(*cand):
                 return cand
-        return point
-
-    def _random_point_in_site(self) -> Point:
-        x0, y0, x1, y1 = map_data.A_SITE.rect
-        m = 0.025
-        return (self.rng.uniform(x0 + m, x1 - m), self.rng.uniform(y0 + m, y1 - m))
+        return self.layout.nearest_clear(point)
 
     def _assign_route(self, p: Player) -> None:
-        routes = map_data.T_ROUTES if p.team is Team.T else map_data.CT_ROUTES
-        names = self.rng.choice(routes)
+        """Pick one of the team's lanes, jitter its via points and let A* join them,
+        so every marker takes a slightly different, wall-free path."""
+        lay = self.layout
+        lanes = lay.t_routes if p.team is Team.T else lay.ct_routes
+        vias = [self._jittered(v, 0.015) for v in self.rng.choice(lanes)]
+        dest = lay.random_point_in(lay.a_site, self.rng)
         route: List[Point] = []
         prev: Point = (p.x, p.y)
-        for name in names[1:-1]:
-            wp = self._jittered(map_data.WAYPOINTS[name], prev, 0.012)
-            route.append(wp)
-            prev = wp
-        # Final destination: a personal spot on the A site.
-        for _ in range(20):
-            dest = self._random_point_in_site()
-            if map_data.segment_walkable(prev, dest, margin=0.002):
-                break
-        else:
-            dest = map_data.A_SITE.center
-        route.append(dest)
-        p.route = route
+        for target in vias + [dest]:
+            leg = lay.find_path(prev, target)
+            if leg:
+                route.extend(leg)
+                prev = leg[-1]
+        p.route = route or [lay.nearest_clear(dest)]
         p.route_index = 0
-        p.base_speed = self.rng.uniform(0.028, 0.058)
+        p.base_speed = self.rng.uniform(0.03, 0.06)
         p.speed = 0.0
         p.stop_timer = self.rng.uniform(0.0, 0.6)  # staggered reaction time
 
@@ -226,11 +216,8 @@ class Simulation:
             p.arrived = True
             p.hold_timer -= dt
             if p.hold_timer <= 0.0:
-                for _ in range(20):
-                    dest = self._random_point_in_site()
-                    if map_data.segment_walkable((p.x, p.y), dest, margin=0.002):
-                        p.route.append(dest)
-                        break
+                dest = self.layout.random_point_in(self.layout.a_site, rng)
+                p.route.extend(self.layout.find_path((p.x, p.y), dest))
                 p.hold_timer = rng.uniform(1.5, 4.0)
             target = p.target
             if target is None:
@@ -259,6 +246,8 @@ class Simulation:
         p.wander += (-p.wander * 1.4 + rng.gauss(0.0, 1.0) * 2.6) * dt
         p.wander = max(-0.9, min(0.9, p.wander))
         wander_weight = min(1.0, dist / 0.06)  # straighten up near waypoints
+        if not self.layout.is_clear(p.x, p.y):
+            wander_weight *= 0.25  # narrow passage: walk straighter
         desired = math.atan2(dy, dx) + p.wander * wander_weight
 
         # Limited turn rate: no instant direction changes.
@@ -277,11 +266,15 @@ class Simulation:
         ny = p.y + math.sin(p.heading) * step
         nx, ny = self._apply_separation(p, nx, ny, dt)
 
-        if map_data.is_walkable(nx, ny, margin=0.006):
+        # Keep a little distance from walls, unless we are already closer than
+        # that (e.g. pushed into a nook) or that is what got us stuck.
+        keep = p.stuck_timer < 0.5 and self.layout.is_walkable(p.x, p.y, WALL_MARGIN)
+        margin = WALL_MARGIN if keep else 0.0
+        if self.layout.is_walkable(nx, ny, margin):
             p.x, p.y = nx, ny
-        elif map_data.is_walkable(nx, p.y, margin=0.006):
+        elif self.layout.is_walkable(nx, p.y, margin):
             p.x = nx  # slide along the wall
-        elif map_data.is_walkable(p.x, ny, margin=0.006):
+        elif self.layout.is_walkable(p.x, ny, margin):
             p.y = ny
         else:
             # Blocked: turn straight towards the target and calm the wander.
@@ -291,8 +284,11 @@ class Simulation:
         moved = math.hypot(p.x - p.prev_x, p.y - p.prev_y)
         if moved < step * 0.2:
             p.stuck_timer += dt
-            if p.stuck_timer > 1.5:
-                # Head straight for the waypoint along the guaranteed-walkable segment.
+            if p.stuck_timer > 1.0:
+                # Wandered behind a corner: re-plan the way to the current waypoint.
+                leg = self.layout.find_path((p.x, p.y), target)
+                if leg:
+                    p.route[p.route_index:p.route_index + 1] = leg
                 p.heading = math.atan2(dy, dx)
                 p.wander = 0.0
                 p.stuck_timer = 0.0
@@ -306,7 +302,7 @@ class Simulation:
             return
         nx = p.x + math.cos(p.heading) * p.speed * dt
         ny = p.y + math.sin(p.heading) * p.speed * dt
-        if map_data.is_walkable(nx, ny, margin=0.006):
+        if self.layout.is_walkable(nx, ny, WALL_MARGIN):
             p.x, p.y = nx, ny
 
     def _apply_separation(self, p: Player, nx: float, ny: float, dt: float) -> Tuple[float, float]:

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import math
-import os
 from typing import List, Optional, Tuple
 
 from PySide6.QtCore import QElapsedTimer, QPointF, QRectF, Qt, QTimer, Signal
@@ -36,21 +35,16 @@ from .simulation import Player, Simulation, Team
 
 log = logging.getLogger(__name__)
 
-ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
-MAP_IMAGE_NAMES = ("de_mirage_radar.png", "de_mirage_radar.jpg", "mirage.png")
-
-
-def load_map_image() -> Optional[QPixmap]:
-    """Load an optional local radar image. Never downloads anything."""
-    for name in MAP_IMAGE_NAMES:
-        path = os.path.join(ASSETS_DIR, name)
-        if os.path.isfile(path):
-            pix = QPixmap(path)
-            if not pix.isNull():
-                log.info("Using map image %s", path)
-                return pix
-            log.warning("Map image %s could not be decoded, using stylised map", path)
-    return None
+def load_texture(layout: map_data.Layout) -> Optional[QPixmap]:
+    """Load the layout's local map texture. Never downloads anything."""
+    if not layout.texture_path:
+        return None
+    pix = QPixmap(layout.texture_path)
+    if pix.isNull():
+        log.warning("Map texture %s could not be decoded; drawing the floor from the grid",
+                    layout.texture_path)
+        return None
+    return pix
 
 
 class RadarView(QWidget):
@@ -65,7 +59,8 @@ class RadarView(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-        self._map_image = load_map_image()
+        self.layout = simulation.layout
+        self._texture = load_texture(self.layout)
         self._static: Optional[QPixmap] = None
         self._static_key: Tuple[int, int, float] = (0, 0, 0.0)
         self._map_rect = QRectF()
@@ -86,8 +81,8 @@ class RadarView(QWidget):
         self._timer.timeout.connect(self._on_frame)
 
     @property
-    def has_map_image(self) -> bool:
-        return self._map_image is not None
+    def has_texture(self) -> bool:
+        return self._texture is not None
 
     # ---------------------------------------------------------------- lifecycle
     def start_loop(self) -> None:
@@ -181,83 +176,56 @@ class RadarView(QWidget):
         for k in (1, 2, 3):
             p.drawEllipse(r.center(), side * 0.16 * k, side * 0.16 * k)
 
-        if self._map_image is not None:
-            p.setOpacity(0.92)
-            p.drawPixmap(r, self._map_image, QRectF(self._map_image.rect()))
-            p.setOpacity(1.0)
         p.restore()
 
-        # Walkable floor as one merged outline.
+        lay = self.layout
         radius = side * 0.008
-        floor = QPainterPath()
-        for z in map_data.ZONES:
-            part = QPainterPath()
-            part.addRoundedRect(self._norm_rect(z.rect), radius, radius)
-            floor = floor.united(part)
-        floor = floor.simplified()
+        if self._texture is not None:
+            p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+            p.drawPixmap(r, self._texture, QRectF(self._texture.rect()))
+        else:
+            self._draw_vector_floor(p, radius)
 
-        floor_alpha = 0.35 if self._map_image is not None else 1.0
-        p.setOpacity(floor_alpha)
-        grad = QLinearGradient(r.topLeft(), r.bottomRight())
-        grad.setColorAt(0.0, QColor("#1b2231"))
-        grad.setColorAt(1.0, QColor("#151a25"))
-        p.fillPath(floor, grad)
-        for width, alpha in ((7.0, 18), (3.5, 40)):
-            p.strokePath(floor, QPen(QColor(120, 160, 255, alpha), width))
-        p.strokePath(floor, QPen(QColor("#4a5878"), 1.4))
-        p.setOpacity(1.0)
-
-        # Special zones.
-        for z in map_data.ZONES:
+        # Sites and spawns.
+        for z in lay.zones:
             zr = self._norm_rect(z.rect).adjusted(3, 3, -3, -3)
+            path = QPainterPath()
+            path.addRoundedRect(zr, radius, radius)
             if z.kind == "site":
-                path = QPainterPath()
-                path.addRoundedRect(zr, radius, radius)
-                p.fillPath(path, QColor(255, 196, 74, 22))
-                pen = QPen(QColor(255, 210, 120, 140), 1.6, Qt.PenStyle.DashLine)
-                p.strokePath(path, pen)
+                p.fillPath(path, QColor(255, 196, 74, 26))
+                p.strokePath(path, QPen(QColor(255, 210, 120, 150), 1.6, Qt.PenStyle.DashLine))
             elif z.kind in ("ct_spawn", "t_spawn"):
                 col = QColor(theme.CT_BLUE if z.kind == "ct_spawn" else theme.T_RED)
-                path = QPainterPath()
-                path.addRoundedRect(zr, radius, radius)
                 fill = QColor(col)
-                fill.setAlpha(34)
+                fill.setAlpha(40)
                 p.fillPath(path, fill)
                 edge = QColor(col)
-                edge.setAlpha(150)
+                edge.setAlpha(170)
                 p.strokePath(path, QPen(edge, 1.4))
 
         # Labels.
         small = theme.make_font(max(6.5, side * 0.0115), QFont.Weight.DemiBold, 1.2)
-        for z in map_data.ZONES:
+        for z in lay.zones:
             if not z.show_label:
                 continue
             zr = self._norm_rect(z.rect)
             if z.kind == "site":
-                letter = z.label[0]
-                big = theme.make_font(max(16.0, side * 0.06), QFont.Weight.Black)
-                p.setFont(big)
-                p.setPen(QColor(255, 220, 150, 60))
-                p.drawText(zr.translated(0, 2), Qt.AlignmentFlag.AlignCenter, letter)
-                p.setPen(QColor(255, 236, 200, 225))
-                p.drawText(zr, Qt.AlignmentFlag.AlignCenter, letter)
-                p.setFont(small)
-                p.setPen(QColor(255, 220, 160, 200))
-                fm = QFontMetricsF(big)
-                below = QRectF(zr.left(), zr.center().y() + fm.height() * 0.42, zr.width(), fm.height() * 0.5)
-                p.drawText(below, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, z.label)
+                self._draw_site_label(p, z, zr, side, small)
             else:
                 p.setFont(small)
-                if z.kind == "ct_spawn":
-                    p.setPen(QColor(150, 190, 255, 210))
-                    box = QRectF(zr.left(), zr.bottom() - side * 0.035, zr.width(), side * 0.03)
-                elif z.kind == "t_spawn":
-                    p.setPen(QColor(255, 150, 160, 210))
-                    box = QRectF(zr.left(), zr.bottom() - side * 0.035, zr.width(), side * 0.03)
+                if z.kind in ("ct_spawn", "t_spawn"):
+                    p.setPen(QColor(150, 190, 255, 220) if z.kind == "ct_spawn" else QColor(255, 150, 160, 220))
+                    box = QRectF(zr.left() - side * 0.03, zr.bottom() + side * 0.002, zr.width() + side * 0.06, side * 0.03)
                 else:
                     p.setPen(QColor(150, 162, 186, 150))
                     box = zr
                 p.drawText(box, Qt.AlignmentFlag.AlignCenter, z.label)
+        p.setFont(small)
+        p.setPen(QColor(170, 182, 206, 170))
+        for text, (x, y) in lay.labels:
+            c = self._to_screen(x, y)
+            p.drawText(QRectF(c.x() - side * 0.1, c.y() - side * 0.015, side * 0.2, side * 0.03),
+                       Qt.AlignmentFlag.AlignCenter, text)
 
         # Frame border.
         p.setPen(QPen(QColor(theme.BORDER), 1.2))
@@ -265,6 +233,52 @@ class RadarView(QWidget):
         p.drawPath(frame)
         p.end()
         return pix
+
+    def _draw_vector_floor(self, p: QPainter, radius: float) -> None:
+        """Floor without a texture: rounded zones (stylised) or grid runs."""
+        r = self._map_rect
+        lay = self.layout
+        floor = QPainterPath()
+        floor_zones = [z for z in lay.zones if z.kind == "floor"]
+        if lay.texture_path is None and floor_zones:
+            for z in lay.zones:
+                part = QPainterPath()
+                part.addRoundedRect(self._norm_rect(z.rect), radius, radius)
+                floor = floor.united(part)
+        else:
+            cw, ch = r.width() / lay.w, r.height() / lay.h
+            for row, cells in enumerate(lay.grid):
+                c = 0
+                while c < lay.w:
+                    if cells[c]:
+                        start = c
+                        while c < lay.w and cells[c]:
+                            c += 1
+                        floor.addRect(QRectF(r.left() + start * cw, r.top() + row * ch,
+                                             (c - start) * cw + 0.5, ch + 0.5))
+                    c += 1
+        floor = floor.simplified()
+        grad = QLinearGradient(r.topLeft(), r.bottomRight())
+        grad.setColorAt(0.0, QColor("#1b2231"))
+        grad.setColorAt(1.0, QColor("#151a25"))
+        p.fillPath(floor, grad)
+        for width, alpha in ((7.0, 18), (3.5, 40)):
+            p.strokePath(floor, QPen(QColor(120, 160, 255, alpha), width))
+        p.strokePath(floor, QPen(QColor("#4a5878"), 1.4))
+
+    def _draw_site_label(self, p: QPainter, z: map_data.Zone, zr: QRectF, side: float, small: QFont) -> None:
+        letter = z.label[0]
+        big = theme.make_font(max(16.0, side * 0.06), QFont.Weight.Black)
+        p.setFont(big)
+        p.setPen(QColor(0, 0, 0, 120))
+        p.drawText(zr.translated(0, 2), Qt.AlignmentFlag.AlignCenter, letter)
+        p.setPen(QColor(255, 236, 200, 225))
+        p.drawText(zr, Qt.AlignmentFlag.AlignCenter, letter)
+        p.setFont(small)
+        p.setPen(QColor(255, 220, 160, 210))
+        fm = QFontMetricsF(big)
+        below = QRectF(zr.left(), zr.center().y() + fm.height() * 0.42, zr.width(), fm.height() * 0.5)
+        p.drawText(below, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, z.label)
 
     # ------------------------------------------------------------------- paint
     def paintEvent(self, event: QPaintEvent) -> None:

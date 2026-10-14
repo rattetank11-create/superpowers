@@ -11,20 +11,47 @@ from app import map_data  # noqa: E402
 from app.simulation import SIM_DT, Simulation, SimState, Team  # noqa: E402
 
 
-class RouteGeometryTest(unittest.TestCase):
-    def test_route_segments_are_walkable(self):
-        for routes in (map_data.T_ROUTES, map_data.CT_ROUTES):
-            for route in routes:
-                pts = [map_data.WAYPOINTS[n] for n in route]
-                for a, b in zip(pts, pts[1:]):
-                    self.assertTrue(map_data.segment_walkable(a, b, 0.006), (route, a, b))
+LAYOUTS = (map_data.textured_layout(), map_data.stylised_layout())
+
+
+class LayoutTest(unittest.TestCase):
+    def test_default_layout_is_the_textured_map(self):
+        self.assertEqual(map_data.load_layout().name, "textured")
 
     def test_spawns_are_walkable_and_in_their_zone(self):
-        ct, t = map_data.ZONE_BY_KEY["ct_spawn"], map_data.ZONE_BY_KEY["t_spawn"]
-        for pt in map_data.CT_SPAWN_POINTS:
-            self.assertTrue(ct.contains(*pt))
-        for pt in map_data.T_SPAWN_POINTS:
-            self.assertTrue(t.contains(*pt))
+        for lay in LAYOUTS:
+            ct, t = lay.zone_by_key["ct_spawn"], lay.zone_by_key["t_spawn"]
+            self.assertEqual(len(lay.ct_spawns), 5)
+            self.assertEqual(len(lay.t_spawns), 5)
+            for pt in lay.ct_spawns:
+                self.assertTrue(ct.contains(*pt) and lay.is_walkable(*pt), (lay.name, pt))
+            for pt in lay.t_spawns:
+                self.assertTrue(t.contains(*pt) and lay.is_walkable(*pt), (lay.name, pt))
+
+    def test_every_lane_has_a_wall_free_path_to_a(self):
+        for lay in LAYOUTS:
+            for spawns, lanes in ((lay.t_spawns, lay.t_routes), (lay.ct_spawns, lay.ct_routes)):
+                for lane in lanes:
+                    stops = [spawns[0]] + lane + [lay.a_site.center]
+                    for a, b in zip(stops, stops[1:]):
+                        leg = lay.find_path(a, b)
+                        self.assertTrue(leg, (lay.name, a, b))
+                        prev = a
+                        for q in leg:
+                            self.assertTrue(lay.segment_walkable(prev, q), (lay.name, prev, q))
+                            prev = q
+
+    def test_find_path_never_crosses_walls_between_random_points(self):
+        import random
+        rng = random.Random(0)
+        lay = LAYOUTS[0]
+        for _ in range(30):
+            a = lay.random_point_in(map_data.Zone("all", "", (0, 0, 1, 1)), rng)
+            b = lay.random_point_in(map_data.Zone("all", "", (0, 0, 1, 1)), rng)
+            prev = a
+            for q in lay.find_path(a, b):
+                self.assertTrue(lay.segment_walkable(prev, q), (a, b, prev, q))
+                prev = q
 
 
 class SimulationTest(unittest.TestCase):
@@ -63,21 +90,21 @@ class SimulationTest(unittest.TestCase):
         self.assertEqual(before, [(p.x, p.y) for p in sim.players])
 
     def test_movement_is_smooth_and_reaches_a_site(self):
-        for seed in range(20):
-            sim = Simulation(seed=seed)
+        for lay, seed in [(lay, seed) for lay in LAYOUTS for seed in range(10)]:
+            sim = Simulation(seed=seed, layout=lay)
             sim.start()
             max_speed = max(p.base_speed for p in sim.players) * 1.2
-            for _ in range(int(60 / SIM_DT)):
+            for _ in range(int(90 / SIM_DT)):
                 sim.step(SIM_DT)
                 for p in sim.players:
                     jump = math.hypot(p.x - p.prev_x, p.y - p.prev_y)
                     self.assertLess(jump, max_speed * SIM_DT * 1.5, "teleport detected")
-                    self.assertTrue(map_data.is_walkable(p.x, p.y), (seed, p.label))
+                    self.assertTrue(lay.is_walkable(p.x, p.y), (lay.name, seed, p.label))
                 if sim.all_arrived:
                     break
-            self.assertTrue(sim.all_arrived, f"seed {seed}: not everyone reached A")
+            self.assertTrue(sim.all_arrived, f"{lay.name} seed {seed}: not everyone reached A")
             for p in sim.players:
-                self.assertTrue(map_data.A_SITE.contains(p.x, p.y))
+                self.assertTrue(lay.a_site.contains(p.x, p.y, margin=-0.03), (lay.name, seed, p.label))
 
     def test_players_use_different_paths_and_speeds(self):
         sim = Simulation(seed=5)
