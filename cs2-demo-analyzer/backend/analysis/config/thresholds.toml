@@ -147,3 +147,36 @@ severity = 1
 threshold = 10.0       # % убийств, которые были разменами
 min_samples = 6
 severity = 1
+
+# ---------------------------------------------------------------------------
+# Корректировка реального ELO FACEIT по качеству игры в демке.
+# perf = (ELO, которое показывают метрики этой игры − текущий ELO FACEIT) / scale.
+# Внутри уровня поправка интерполируется: perf_from → delta_from, perf_to → delta_to
+# (за краями — ограничивается). Уровни проверяются сверху вниз.
+# ---------------------------------------------------------------------------
+[faceit_adjustment]
+scale = 350.0
+# "Игра в ноль" независимо от perf: убийств не больше zero_max_kills ИЛИ ADR ниже zero_min_adr.
+zero_max_kills = 0
+zero_min_adr = 25.0
+
+[[faceit_adjustment.tiers]]
+id = "very_bad"
+perf_from = -3.0
+perf_to = -1.5
+delta_from = -700
+delta_to = -300
+
+[[faceit_adjustment.tiers]]
+id = "bad"
+perf_from = -1.5
+perf_to = -0.25
+delta_from = -300
+delta_to = -100
+
+[[faceit_adjustment.tiers]]
+id = "normal"
+perf_from = -0.25
+perf_to = 1.5
+delta_from = 100
+delta_to = 300

@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     job_timeout_seconds: int = 900
 
+    # FACEIT Data API (ключ: developers.faceit.com). Пусто — поиск на FACEIT выключен.
+    faceit_api_key: str = ""
+    faceit_timeout_seconds: float = 5.0
+    faceit_cache_seconds: int = 3600
+    rate_limit_faceit_refresh_per_hour: int = 20
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024

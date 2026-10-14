@@ -191,8 +191,42 @@ export interface Rating {
   disclaimer: string;
 }
 
+export interface FaceitAccount {
+  player_id: string | null;
+  nickname: string | null;
+  avatar: string | null;
+  url: string | null;
+  country: string | null;
+  elo: number | null;
+  level: number | null;
+}
+
+export interface FaceitAdjustment {
+  tier: "very_bad" | "bad" | "normal";
+  perf: number;
+  match_elo: number;
+  current_elo: number;
+  current_level: number;
+  delta: number;
+  tier_delta_min: number;
+  tier_delta_max: number;
+  new_elo: number;
+  new_level: number;
+  reasons: string[];
+  disclaimer: string;
+}
+
+export interface FaceitBlock {
+  status: "found" | "not_found" | "unavailable" | "no_key";
+  account: FaceitAccount | null;
+  message: string | null;
+  checked_at: number;
+  adjustment: FaceitAdjustment | null;
+}
+
 export interface Report {
   version: number;
+  faceit?: FaceitBlock;
   player: { steamid: string; name: string };
   match: MatchMeta;
   overview: {
@@ -273,4 +307,5 @@ export const api = {
     request<{ match_id: string }>(`/api/uploads/${uploadId}/complete`, { method: "POST" }),
   match: (id: string) => request<MatchStatus>(`/api/matches/${id}`, { cache: "no-store" }),
   report: (id: string) => request<ReportResponse>(`/api/reports/${id}`),
+  refreshFaceit: (id: string) => request<FaceitBlock>(`/api/reports/${id}/faceit/refresh`, { method: "POST" }),
 };

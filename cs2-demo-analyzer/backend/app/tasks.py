@@ -8,9 +8,11 @@ from pathlib import Path
 
 from analysis.errors import AnalysisError
 from analysis.pipeline import analyze_demo
+from analysis.settings import load_faceit_levels, load_thresholds
 
 from .config import get_settings
 from .db import Match, Report, get_sessionmaker, utcnow
+from .faceit import faceit_block, make_client
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +23,23 @@ def _update(match_id: str, **fields) -> None:
     with get_sessionmaker()() as db:
         db.query(Match).filter(Match.id == match_id).update(fields)
         db.commit()
+
+
+def attach_faceit(result: dict) -> None:
+    """Ищет FACEIT всех игроков и добавляет report["faceit"]. Никогда не бросает исключений."""
+    try:
+        client = make_client(get_settings())
+        cfg = load_thresholds()["faceit_adjustment"]
+        levels = load_faceit_levels()
+        try:
+            for p in result["players"]:
+                report = result["reports"][p["steamid"]]
+                lookup = client.lookup(p["steamid"], p["name"])
+                report["faceit"] = faceit_block(lookup, report, cfg, levels)
+        finally:
+            client.close()
+    except Exception:  # noqa: BLE001 — FACEIT не должен ломать анализ
+        log.exception("FACEIT enrichment failed")
 
 
 def analyze_match_job(match_id: str, path: str) -> None:
@@ -36,6 +55,8 @@ def analyze_match_job(match_id: str, path: str) -> None:
     _update(match_id, status="processing", progress=1, stage="start")
     try:
         result = analyze_demo(path, progress=progress)
+        progress(98, "faceit")
+        attach_faceit(result)
         with get_sessionmaker()() as db:
             match = db.get(Match, match_id)
             if match is None:  # матч удалили, пока шёл анализ

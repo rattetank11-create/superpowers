@@ -23,11 +23,13 @@ from sqlalchemy.orm import Session
 
 from analysis.errors import AnalysisError
 from analysis.loader import check_demo_header
+from analysis.settings import load_faceit_levels, load_thresholds
 
 from . import storage
 from .config import Settings, get_settings
 from .db import Match, Report, Upload, get_db, init_db, utcnow
-from .ratelimit import make_upload_limiter
+from .faceit import faceit_block, make_client
+from .ratelimit import RateLimiter, make_upload_limiter
 from .tasks import enqueue_analysis
 
 log = logging.getLogger(__name__)
@@ -43,6 +45,9 @@ async def lifespan(app: FastAPI):
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     init_db()
     app.state.upload_limiter = make_upload_limiter(settings)
+    app.state.faceit_limiter = RateLimiter(
+        settings.rate_limit_faceit_refresh_per_hour, 3600, getattr(app.state.upload_limiter, "redis", None)
+    )
     yield
 
 
@@ -224,3 +229,27 @@ def find_player_report(match_id: str, steamid: str, db: Session = Depends(get_db
     if report is None:
         raise api_error(404, "player_not_found", "Игрок с таким SteamID не найден в этой демке.")
     return {"report_id": report.id}
+
+
+@app.post("/api/reports/{report_id}/faceit/refresh")
+def refresh_faceit(
+    report_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    """Повторный поиск FACEIT-аккаунта (без кэша) и пересчёт поправки ELO."""
+    report = db.get(Report, report_id)
+    if report is None:
+        raise api_error(404, "report_not_found", "Отчёт не найден.")
+    if not request.app.state.faceit_limiter.hit(f"faceit:{client_ip(request, settings)}"):
+        raise api_error(429, "rate_limited", "Слишком много обновлений. Попробуйте позже.")
+    client = make_client(settings)
+    try:
+        lookup = client.lookup(report.steamid, report.name, use_cache=False)
+    finally:
+        client.close()
+    block = faceit_block(lookup, report.data, load_thresholds()["faceit_adjustment"], load_faceit_levels())
+    report.data = {**report.data, "faceit": block}  # новый dict, чтобы SQLAlchemy увидел изменение JSON
+    db.commit()
+    return block

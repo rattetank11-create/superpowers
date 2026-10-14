@@ -13,6 +13,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("CHUNK_SIZE_MB", "1")
     monkeypatch.setenv("MAX_UPLOAD_MB", "100")
     monkeypatch.setenv("RATE_LIMIT_UPLOADS_PER_HOUR", "3")
+    monkeypatch.setenv("RATE_LIMIT_FACEIT_REFRESH_PER_HOUR", "2")
+    monkeypatch.setenv("FACEIT_API_KEY", "")
     from app import config, db
 
     config.get_settings.cache_clear()
@@ -109,8 +111,57 @@ def test_real_demo_end_to_end(client, real_demo_path, tmp_path):
     rep = client.get(f"/api/reports/{player['report_id']}").json()
     assert rep["report"]["player"]["steamid"] == player["steamid"]
     assert "counterstrafe" in rep["report"] and "rating" in rep["report"]
+    # без ключа FACEIT анализ не ломается, а отчёт честно помечен
+    assert rep["report"]["faceit"]["status"] == "no_key"
+    assert rep["report"]["faceit"]["adjustment"] is None
 
     found = client.get(f"/api/matches/{match_id}/players/{player['steamid']}").json()
     assert found["report_id"] == player["report_id"]
     r = client.get(f"/api/matches/{match_id}/players/123")
     assert r.status_code == 404 and r.json()["detail"]["code"] == "player_not_found"
+
+
+def _insert_report(elo=1300, kills=15, adr=80.0):
+    from app.db import Match, Report, get_sessionmaker
+
+    with get_sessionmaker()() as db:
+        m = Match(status="done", filename="x.dem")
+        db.add(m)
+        db.flush()
+        r = Report(match_id=m.id, steamid="76561198265366770", name="Nick",
+                   data={"overview": {"kills": kills, "adr": adr}, "rating": {"elo": elo}})
+        db.add(r)
+        db.commit()
+        return r.id
+
+
+def test_faceit_refresh(client, monkeypatch):
+    import httpx
+
+    from app import main
+    from app.faceit import FaceitClient
+
+    payload = {
+        "player_id": "p", "nickname": "Nick", "steam_id_64": "76561198265366770",
+        "games": {"cs2": {"faceit_elo": 1500, "skill_level": 7, "game_player_id": "76561198265366770"}},
+    }
+    monkeypatch.setattr(
+        main, "make_client",
+        lambda s: FaceitClient("k", transport=httpx.MockTransport(lambda r: httpx.Response(200, json=payload))),
+    )
+    rid = _insert_report(elo=1300)
+    r = client.post(f"/api/reports/{rid}/faceit/refresh")
+    assert r.status_code == 200, r.text
+    block = r.json()
+    assert block["status"] == "found" and block["account"]["elo"] == 1500
+    assert block["adjustment"]["tier"] == "bad"
+    # сохранилось в отчёте
+    saved = client.get(f"/api/reports/{rid}").json()["report"]["faceit"]
+    assert saved["adjustment"]["new_elo"] == block["adjustment"]["new_elo"]
+    # rate limit (2 в час в тестах)
+    client.post(f"/api/reports/{rid}/faceit/refresh")
+    assert client.post(f"/api/reports/{rid}/faceit/refresh").status_code == 429
+
+
+def test_faceit_refresh_unknown_report(client):
+    assert client.post("/api/reports/nope/faceit/refresh").status_code == 404

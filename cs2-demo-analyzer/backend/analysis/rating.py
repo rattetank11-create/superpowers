@@ -93,3 +93,62 @@ def estimate_elo(
         "contributions": contributions,
         "disclaimer": "Это оценка по одной демке, а не реальный ELO FACEIT.",
     }
+
+
+def _tier_for(perf: float, tiers: list[dict[str, Any]]) -> dict[str, Any]:
+    """Уровень игры по perf: границы perf_from включительно, худший уровень открыт снизу,
+    лучший — сверху."""
+    ordered = sorted(tiers, key=lambda t: t["perf_from"])
+    if perf < ordered[0]["perf_to"]:
+        return ordered[0]
+    for tier in ordered[1:]:
+        if perf < tier["perf_to"]:
+            return tier
+    return ordered[-1]
+
+
+def adjust_faceit_elo(
+    current_elo: float,
+    match_elo: float,
+    kills: int,
+    adr: float,
+    cfg: dict[str, Any],
+    levels: dict[str, Any],
+) -> dict[str, Any]:
+    """Поправка к реальному ELO FACEIT по качеству игры относительно уровня игрока.
+
+    current_elo — ELO с FACEIT, match_elo — ELO, которое показывают метрики этой демки
+    (estimate_elo). Это оценка, а не реальное изменение ELO на FACEIT.
+    """
+    perf = (float(match_elo) - float(current_elo)) / float(cfg["scale"])
+    reasons = []
+    if kills <= cfg["zero_max_kills"]:
+        reasons.append("zero_kills")
+    if adr < cfg["zero_min_adr"]:
+        reasons.append("low_adr")
+    worst = min(cfg["tiers"], key=lambda t: t["perf_from"])
+    tier = worst if reasons else _tier_for(perf, cfg["tiers"])
+    if not reasons and tier is worst:
+        reasons.append("perf")
+
+    span = tier["perf_to"] - tier["perf_from"]
+    frac = min(1.0, max(0.0, (perf - tier["perf_from"]) / span)) if span else 1.0
+    delta = round(tier["delta_from"] + frac * (tier["delta_to"] - tier["delta_from"]))
+
+    floor = float(levels.get("min_elo", 100))
+    new_elo = max(floor, float(current_elo) + delta)
+    lo, hi = sorted((tier["delta_from"], tier["delta_to"]))
+    return {
+        "tier": tier["id"],
+        "perf": round(perf, 2),
+        "match_elo": round(float(match_elo)),
+        "current_elo": round(float(current_elo)),
+        "current_level": level_for_elo(current_elo, levels),
+        "delta": int(round(new_elo - float(current_elo))),
+        "tier_delta_min": int(lo),
+        "tier_delta_max": int(hi),
+        "new_elo": round(new_elo),
+        "new_level": level_for_elo(new_elo, levels),
+        "reasons": reasons if tier is worst else [],
+        "disclaimer": "Оценка по одной демке, а не реальное изменение ELO на FACEIT.",
+    }

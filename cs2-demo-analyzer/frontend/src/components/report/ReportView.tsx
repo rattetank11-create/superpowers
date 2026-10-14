@@ -6,8 +6,9 @@ import { useState } from "react";
 import { t } from "@/i18n";
 import type { ReportResponse } from "@/lib/api";
 
-import { Card, LevelBadge, cx, fmtPct } from "../ui";
+import { Card, cx, fmtPct } from "../ui";
 import { CounterstrafeTab } from "./CounterstrafeTab";
+import { EloCard } from "./EloCard";
 import { DuelsTab } from "./DuelsTab";
 import { RecommendationsTab } from "./RecommendationsTab";
 import { WorstMoments } from "./WorstMoments";
@@ -48,7 +49,6 @@ export function ReportView({ data }: { data: ReportResponse }) {
   const [tab, setTab] = useState<Tab>("counterstrafe");
   const [copied, setCopied] = useState(false);
   const rating = r.rating;
-  const levelRange = rating.level_low === rating.level_high ? `${rating.level}` : `${rating.level_low}–${rating.level_high}`;
 
   async function share() {
     try {
@@ -111,21 +111,7 @@ export function ReportView({ data }: { data: ReportResponse }) {
           </div>
         </Card>
 
-        <Card>
-          <div className="label-caps">{t("report.elo")}</div>
-          <div className="mt-3 flex items-center gap-4">
-            <LevelBadge level={rating.level} size={56} />
-            <div>
-              <div className="text-2xl font-black tabular">
-                {rating.elo_low}–{rating.elo_high}
-              </div>
-              <div className="text-sm text-ink-2">{t("report.elo.level", { range: levelRange })}</div>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-muted">
-            {t("report.elo.disclaimer")} {!rating.calibrated ? t("report.elo.uncalibrated") : null}
-          </p>
-        </Card>
+        <EloCard reportId={data.id} rating={rating} initial={r.faceit} />
 
         <Card>
           <div className="label-caps mb-3">{t("report.top")}</div>
