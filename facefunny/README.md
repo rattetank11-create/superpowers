@@ -104,3 +104,8 @@ python -m unittest discover -s tests -v
 UI-тест запускается без дисплея (`QT_QPA_PLATFORM=offscreen` выставляется автоматически).
 
 Журнал ошибок пишется в `%TEMP%\facefunny.log` (Windows) или `/tmp/facefunny.log`.
+
+## Скриншоты
+
+![Экран подключения](docs/screenshots/1_connect.png)
+![Радар во время движения](docs/screenshots/3_radar_moving.png)
