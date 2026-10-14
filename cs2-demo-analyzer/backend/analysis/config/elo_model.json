@@ -1,0 +1,18 @@
+{
+  "version": "prior-1",
+  "calibrated": false,
+  "description": "Априорная линейная модель (веса выставлены вручную, не обучены). Переобучение: python -m scripts.calibrate_elo dataset.csv",
+  "intercept": 1250.0,
+  "residual_std": 350.0,
+  "features": {
+    "cs_perfect_pct":        {"mean": 55.0,  "std": 15.0,  "weight": 70.0},
+    "first_bullet_acc_pct":  {"mean": 30.0,  "std": 10.0,  "weight": 60.0},
+    "hs_pct":                {"mean": 40.0,  "std": 12.0,  "weight": 40.0},
+    "duel_winrate":          {"mean": 50.0,  "std": 10.0,  "weight": 90.0},
+    "opening_winrate":       {"mean": 50.0,  "std": 15.0,  "weight": 30.0},
+    "crosshair_median_deg":  {"mean": 8.0,   "std": 3.0,   "weight": -70.0},
+    "median_ttk_ms":         {"mean": 450.0, "std": 150.0, "weight": -30.0},
+    "kpr":                   {"mean": 0.68,  "std": 0.15,  "weight": 90.0},
+    "adr":                   {"mean": 75.0,  "std": 15.0,  "weight": 60.0}
+  }
+}

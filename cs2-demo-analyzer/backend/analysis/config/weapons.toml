@@ -1,0 +1,187 @@
+# Параметры оружия CS2 для анализа контрстрейфов.
+#
+# Ключ — имя класса из события weapon_fire без префикса "weapon_"
+# (в демке оно приходит как "weapon_ak47", "weapon_m4a1_silencer" и т.д.).
+#
+# max_speed         — максимальная скорость бега с этим оружием в руках (юнитов/с).
+# scoped_max_speed  — максимальная скорость в прицеле (только у оружия с оптикой).
+# category          — rifle | smg | pistol | sniper | heavy | shotgun
+#
+# Порог точности = accuracy_speed_ratio (см. thresholds.toml) * max_speed
+# (или * scoped_max_speed, если игрок в прицеле).
+
+[ak47]
+name = "AK-47"
+category = "rifle"
+max_speed = 215
+
+[m4a1]
+name = "M4A4"
+category = "rifle"
+max_speed = 225
+
+[m4a1_silencer]
+name = "M4A1-S"
+category = "rifle"
+max_speed = 225
+
+[galilar]
+name = "Galil AR"
+category = "rifle"
+max_speed = 215
+
+[famas]
+name = "FAMAS"
+category = "rifle"
+max_speed = 220
+
+[aug]
+name = "AUG"
+category = "rifle"
+max_speed = 220
+scoped_max_speed = 150
+
+[sg556]
+name = "SG 553"
+category = "rifle"
+max_speed = 210
+scoped_max_speed = 150
+
+[awp]
+name = "AWP"
+category = "sniper"
+max_speed = 200
+scoped_max_speed = 100
+
+[ssg08]
+name = "SSG 08"
+category = "sniper"
+max_speed = 230
+scoped_max_speed = 230
+
+[scar20]
+name = "SCAR-20"
+category = "sniper"
+max_speed = 215
+scoped_max_speed = 120
+
+[g3sg1]
+name = "G3SG1"
+category = "sniper"
+max_speed = 215
+scoped_max_speed = 120
+
+[deagle]
+name = "Desert Eagle"
+category = "pistol"
+max_speed = 230
+
+[revolver]
+name = "R8 Revolver"
+category = "pistol"
+max_speed = 220
+
+[glock]
+name = "Glock-18"
+category = "pistol"
+max_speed = 240
+
+[usp_silencer]
+name = "USP-S"
+category = "pistol"
+max_speed = 240
+
+[hkp2000]
+name = "P2000"
+category = "pistol"
+max_speed = 240
+
+[p250]
+name = "P250"
+category = "pistol"
+max_speed = 240
+
+[fiveseven]
+name = "Five-SeveN"
+category = "pistol"
+max_speed = 240
+
+[tec9]
+name = "Tec-9"
+category = "pistol"
+max_speed = 240
+
+[cz75a]
+name = "CZ75-Auto"
+category = "pistol"
+max_speed = 240
+
+[elite]
+name = "Dual Berettas"
+category = "pistol"
+max_speed = 240
+
+[mac10]
+name = "MAC-10"
+category = "smg"
+max_speed = 240
+
+[mp9]
+name = "MP9"
+category = "smg"
+max_speed = 240
+
+[mp7]
+name = "MP7"
+category = "smg"
+max_speed = 220
+
+[mp5sd]
+name = "MP5-SD"
+category = "smg"
+max_speed = 235
+
+[ump45]
+name = "UMP-45"
+category = "smg"
+max_speed = 230
+
+[p90]
+name = "P90"
+category = "smg"
+max_speed = 230
+
+[bizon]
+name = "PP-Bizon"
+category = "smg"
+max_speed = 240
+
+[nova]
+name = "Nova"
+category = "shotgun"
+max_speed = 220
+
+[xm1014]
+name = "XM1014"
+category = "shotgun"
+max_speed = 215
+
+[mag7]
+name = "MAG-7"
+category = "shotgun"
+max_speed = 225
+
+[sawedoff]
+name = "Sawed-Off"
+category = "shotgun"
+max_speed = 210
+
+[m249]
+name = "M249"
+category = "heavy"
+max_speed = 195
+
+[negev]
+name = "Negev"
+category = "heavy"
+max_speed = 150

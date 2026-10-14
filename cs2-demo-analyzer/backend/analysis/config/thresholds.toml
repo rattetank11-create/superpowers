@@ -1,0 +1,149 @@
+# Параметры анализа и пороги рекомендаций.
+# Все значения можно калибровать без изменения кода.
+# Тики: CS2 = 64 тика в секунду (1 тик ≈ 15.6 мс).
+
+[general]
+tickrate = 64
+# Скорости выше этого значения — телепорты/спавн, а не движение игрока.
+max_plausible_speed = 400
+
+[counterstrafe]
+# Пауза между выстрелами длиннее этого значения начинает новую очередь.
+burst_gap_seconds = 0.5
+# Порог точности: доля от максимальной скорости оружия (~34% в CS2).
+accuracy_speed_ratio = 0.34
+# "slow": выше порога точности, но не выше этой доли от макс. скорости.
+slow_speed_ratio = 0.55
+# Окно перед выстрелом, в котором ищем движение и начало торможения.
+# Если за это окно игрок не разгонялся выше порога точности —
+# выстрел "с места", контрстрейф не требовался.
+lookback_seconds = 0.5
+# Если после остановки игрок ждал дольше этого — "поздно" (потерянное время).
+late_after_stop_ticks = 6
+# Противоположная клавиша, нажатая в течение стольких тиков после начала торможения,
+# считается контрстрейфом (иначе — "release", игрок просто отпустил клавишу).
+counter_window_ticks = 4
+# Сколько тиков после выстрела смотрим, чтобы понять, когда игрок остановился бы.
+lookahead_ticks = 16
+
+[duels]
+# Обмены уроном между двумя игроками с паузой не больше этой — одна дуэль.
+duel_gap_seconds = 3.0
+# Сколько секунд до первого урона ищем выстрелы, чтобы понять, кто стрелял первым.
+first_shot_lookback_seconds = 1.5
+# Выстрел считается "в сторону противника", если угол до его головы меньше этого.
+aimed_shot_max_angle_deg = 12.0
+# Окно, в котором флешка тиммейта считается поддержкой пика.
+flash_support_seconds = 3.0
+# Минимальная длительность ослепления, чтобы флешка считалась.
+min_blind_seconds = 0.7
+# Игрок считается "пикающим", если его средняя скорость за это окно до дуэли выше порога
+# и выше скорости соперника.
+peek_window_seconds = 0.75
+peek_min_speed = 90.0
+
+[crosshair]
+# Повторное обнаружение того же врага раньше этого времени игнорируем.
+respot_cooldown_seconds = 2.0
+# Высота глаз стоя / снижение при приседе (юниты Source 2).
+eye_height_standing = 64.0
+eye_height_crouch_delta = 18.0
+# Порог "хорошего" прицела.
+good_angle_deg = 5.0
+# Дальше этой дистанции ошибку угла не учитываем (пиксельные цели).
+max_distance = 3500.0
+
+[trades]
+trade_window_seconds = 5.0
+
+# ---------------------------------------------------------------------------
+# Рекомендации. Каждое правило срабатывает, если метрика хуже порога.
+# min_samples — минимальное количество событий, чтобы делать вывод.
+# ---------------------------------------------------------------------------
+[recommendations]
+top_n = 3
+
+[recommendations.cs_perfect_low]
+threshold = 60.0       # % идеальных контрстрейфов ниже этого
+min_samples = 10
+severity = 3
+
+[recommendations.cs_moving_weapon]
+threshold = 40.0       # % первых выстрелов на ходу/в прыжке с конкретным оружием
+min_samples = 8
+severity = 3
+
+[recommendations.cs_early]
+threshold = 35.0       # % выстрелов до полной остановки
+min_samples = 10
+severity = 2
+
+[recommendations.cs_late]
+threshold = 35.0       # % выстрелов со слишком долгим ожиданием после остановки
+min_samples = 10
+severity = 1
+
+[recommendations.cs_release_only]
+threshold = 50.0       # % торможений без нажатия противоположной клавиши
+min_samples = 10
+severity = 2
+
+[recommendations.cs_air]
+threshold = 5.0        # % первых выстрелов в прыжке
+min_samples = 10
+severity = 2
+
+[recommendations.duel_winrate_low]
+threshold = 45.0
+min_samples = 8
+severity = 2
+
+[recommendations.opening_winrate_low]
+threshold = 40.0
+min_samples = 4
+severity = 2
+
+[recommendations.peek_no_flash]
+threshold = 45.0       # winrate дуэлей, когда пикаешь сам без флешки
+min_samples = 5
+severity = 3
+
+[recommendations.first_shot_low]
+threshold = 45.0       # % дуэлей, где ты выстрелил первым
+min_samples = 8
+severity = 2
+
+[recommendations.ttk_high]
+threshold = 700.0      # медианный time-to-kill, мс
+min_samples = 5
+severity = 1
+
+[recommendations.first_bullet_acc_low]
+threshold = 25.0       # % попаданий первой пулей
+min_samples = 15
+severity = 2
+
+[recommendations.hs_low]
+threshold = 35.0       # HS% по убийствам
+min_samples = 8
+severity = 1
+
+[recommendations.crosshair_angle_high]
+threshold = 8.0        # медианный угол до головы в момент обнаружения, градусы
+min_samples = 10
+severity = 3
+
+[recommendations.crosshair_low]
+threshold = 2.5        # медианная вертикальная ошибка (прицел ниже головы), градусы
+min_samples = 10
+severity = 2
+
+[recommendations.untraded_deaths]
+threshold = 25.0       # % смертей, которые разменяли тиммейты
+min_samples = 6
+severity = 1
+
+[recommendations.trade_kills_low]
+threshold = 10.0       # % убийств, которые были разменами
+min_samples = 6
+severity = 1
