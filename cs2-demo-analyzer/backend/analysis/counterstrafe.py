@@ -234,7 +234,9 @@ def analyze_counterstrafe(
         )
         records.append(rec)
 
-    return summarize_counterstrafe(records, use_buttons, tickrate)
+    summary = summarize_counterstrafe(records, use_buttons, tickrate)
+    summary["accuracy_speed_ratio"] = cfg["accuracy_speed_ratio"]
+    return summary
 
 
 
