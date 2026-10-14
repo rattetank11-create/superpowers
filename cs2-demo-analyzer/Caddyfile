@@ -1,0 +1,29 @@
+# HTTPS-сертификат Let's Encrypt Caddy получает автоматически для {$DOMAIN}.
+# Чтобы получать письма об истечении сертификата, добавьте в начало файла:
+# {
+# 	email you@example.com
+# }
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API: чанки демки по 8 МБ — разрешаем тело чуть больше.
+	handle /api/* {
+		request_body {
+			max_size 10MB
+		}
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

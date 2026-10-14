@@ -1,0 +1,97 @@
+# Весь проект: Caddy (HTTPS) → Next.js (web) + FastAPI (api), RQ-воркер, PostgreSQL, Redis.
+# Локально: DOMAIN=localhost (Caddy выдаст локальный сертификат).
+# На VPS: DOMAIN=example.com в .env — Caddy сам получит сертификат Let's Encrypt.
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cs2}:${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}@db:5432/${POSTGRES_DB:-cs2}
+  REDIS_URL: redis://redis:6379/0
+  TASK_MODE: rq
+  UPLOAD_DIR: /data/uploads
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
+  CHUNK_SIZE_MB: ${CHUNK_SIZE_MB:-8}
+  RATE_LIMIT_UPLOADS_PER_HOUR: ${RATE_LIMIT_UPLOADS_PER_HOUR:-10}
+  TRUST_PROXY: "true"
+  CORS_ORIGINS: https://${DOMAIN:-localhost}
+  JOB_TIMEOUT_SECONDS: ${JOB_TIMEOUT_SECONDS:-900}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cs2}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cs2}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment: *backend-env
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: ["sh", "-c", "rq worker analysis --url $$REDIS_URL"]
+    environment: *backend-env
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      api: { condition: service_healthy }
+    # Парсинг большой демки занимает до ~1–2 ГБ RAM; ограничьте под свой VPS.
+    mem_limit: ${WORKER_MEM_LIMIT:-3g}
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:
