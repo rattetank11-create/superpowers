@@ -1,1 +1,4 @@
-PySide6>=6.5
+# Only the Qt modules the app needs (no WebEngine): about 120 MB instead of ~250 MB.
+# Essentials: QtCore/QtGui/QtWidgets. Addons: QtMultimedia for interface sounds.
+PySide6-Essentials>=6.5
+PySide6-Addons>=6.5
