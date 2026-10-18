@@ -1,0 +1,549 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Claude Opus 5.5 — teaser</title>
+<style>
+  @font-face { font-family: "InterD"; font-weight: 200; src: url("file:///usr/share/fonts/opentype/inter/InterDisplay-ExtraLight.otf"); }
+  @font-face { font-family: "InterD"; font-weight: 300; src: url("file:///usr/share/fonts/opentype/inter/InterDisplay-Light.otf"); }
+  @font-face { font-family: "InterD"; font-weight: 400; src: url("file:///usr/share/fonts/opentype/inter/InterDisplay-Regular.otf"); }
+  @font-face { font-family: "InterD"; font-weight: 500; src: url("file:///usr/share/fonts/opentype/inter/InterDisplay-Medium.otf"); }
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #000; font-family: "InterD", sans-serif; }
+  canvas { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  #fx { mix-blend-mode: screen; }
+  .layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+
+  /* 0–3 s title */
+  #title { color: #fff; font-weight: 200; font-size: 92px; white-space: nowrap; }
+  #title span.t {
+    text-shadow: 0 0 18px rgba(255,255,255,.55), 0 0 60px rgba(170,200,255,.35), 0 0 140px rgba(120,150,255,.25);
+  }
+  #title .sub { display:block; margin-top: 34px; font-size: 26px; font-weight: 300; letter-spacing: .6em; text-align: center; color: rgba(255,255,255,.62); }
+
+  /* 6–9 s interface */
+  #ui { perspective: 1400px; }
+  #uiInner { width: 940px; transform-style: preserve-3d; display:flex; flex-direction:column; align-items:center; }
+  #greet { display:flex; align-items:center; gap: 26px; margin-bottom: 64px; color: #f4efe8; font-weight: 300; font-size: 64px; letter-spacing: -.01em; }
+  #greet svg { width: 84px; height: 84px; filter: drop-shadow(0 0 22px rgba(217,119,87,.55)); }
+  #box {
+    width: 940px; box-sizing: border-box; padding: 34px 36px 28px 36px; border-radius: 40px;
+    background: linear-gradient(180deg, rgba(38,36,40,.72), rgba(22,21,25,.78));
+    border: 1.5px solid rgba(255,255,255,.13);
+    box-shadow: 0 30px 120px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.4) inset, 0 0 90px rgba(217,119,87,.10), 0 1px 0 rgba(255,255,255,.08) inset;
+    backdrop-filter: blur(24px);
+  }
+  #row1 { display:flex; align-items:center; gap: 22px; min-height: 64px; }
+  #row1 svg { width: 46px; height: 46px; flex: none; }
+  #typed { color: #ece8e2; font-size: 40px; font-weight: 400; letter-spacing: -.005em; white-space: nowrap; }
+  #typed.ph { color: rgba(236,232,226,.38); }
+  #caret { display:inline-block; width: 3px; height: 46px; background: #d97757; vertical-align: -8px; margin-left: 3px; border-radius: 2px; }
+  #row2 { display:flex; align-items:center; justify-content: space-between; margin-top: 30px; }
+  .chip { display:flex; align-items:center; justify-content:center; height: 60px; min-width: 60px; padding: 0 22px; box-sizing: border-box; border-radius: 18px; border: 1.5px solid rgba(255,255,255,.12); color: rgba(236,232,226,.75); font-size: 28px; font-weight: 400; }
+  #right { display:flex; align-items:center; gap: 22px; }
+  #model { color: rgba(236,232,226,.78); font-size: 28px; font-weight: 400; display:flex; align-items:center; gap: 10px; }
+  #model i { font-style: normal; opacity: .55; font-size: 22px; }
+  #send { width: 64px; height: 64px; border-radius: 18px; background: #d97757; display:flex; align-items:center; justify-content:center; }
+  #send svg { width: 30px; height: 30px; }
+
+  /* 12–15 s end card */
+  #end { flex-direction: column; justify-content: flex-start; padding-top: 300px; box-sizing: border-box; }
+  #endLogo { width: 120px; height: 120px; filter: drop-shadow(0 0 30px rgba(217,119,87,.7)); }
+  #endTitle { margin-top: 44px; color:#fff; font-weight: 200; font-size: 96px; letter-spacing: .08em; white-space: nowrap;
+    text-shadow: 0 0 20px rgba(255,255,255,.5), 0 0 70px rgba(255,190,150,.3); }
+  #endSub { margin-top: 30px; color: rgba(255,255,255,.6); font-weight: 300; font-size: 26px; letter-spacing: .55em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl" width="1080" height="1920"></canvas>
+  <canvas id="fx" width="1080" height="1920"></canvas>
+  <div class="layer" id="titleL"><div id="title"><span class="t" id="titleText">Claude Opus 5.5</span><span class="sub" id="titleSub">ANTHROPIC</span></div></div>
+  <div class="layer" id="ui"><div id="uiInner">
+    <div id="greet"><svg class="spark" viewBox="-50 -50 100 100"></svg><span>Good evening</span></div>
+    <div id="box">
+      <div id="row1"><svg class="spark" viewBox="-50 -50 100 100"></svg><div><span id="typed" class="ph"></span><span id="caret"></span></div></div>
+      <div id="row2">
+        <div class="chip">+</div>
+        <div id="right"><div id="model">Opus 5.5 <i>&#9662;</i></div>
+          <div id="send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="layer" id="end">
+    <svg id="endLogo" class="spark" viewBox="-50 -50 100 100"></svg>
+    <div id="endTitle">Claude Opus 5.5</div>
+    <div id="endSub">ANTHROPIC</div>
+  </div>
+</div>
+
+<script id="vs" type="x-shader">
+attribute vec2 aPos; void main(){ gl_Position = vec4(aPos,0.,1.); }
+</script>
+<script id="fs" type="x-shader">
+precision highp float;
+uniform vec2 uRes;
+uniform float uT;
+uniform float uStar, uWarp, uGal, uGalZoom, uGalRot, uGalTilt, uFlash, uNeb;
+uniform float uMoon, uMoonR, uMoonRot, uTextGlow, uFlare, uFade;
+uniform vec2 uMoonC;
+uniform sampler2D uTextTex;
+
+#define PI 3.14159265
+
+mat2 rot(float a){ float c=cos(a), s=sin(a); return mat2(c,s,-s,c); }
+float hash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+vec2 hash22(vec2 p){ float n=hash21(p); return vec2(n, hash21(p+n+17.17)); }
+float hash31(vec3 p){ p=fract(p*0.3183099+.1); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+vec3 hash33(vec3 p){ return vec3(hash31(p), hash31(p+31.7), hash31(p+57.3)); }
+
+float noise(vec2 p){
+  vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
+  return mix(mix(hash21(i),hash21(i+vec2(1,0)),u.x), mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),u.x), u.y);
+}
+float fbm(vec2 p){ float v=0., a=.5; for(int i=0;i<6;i++){ v+=a*noise(p); p=rot(.5)*p*2.03+3.1; a*=.5; } return v; }
+float noise3(vec3 p){
+  vec3 i=floor(p), f=fract(p); vec3 u=f*f*(3.-2.*f);
+  return mix(mix(mix(hash31(i),hash31(i+vec3(1,0,0)),u.x), mix(hash31(i+vec3(0,1,0)),hash31(i+vec3(1,1,0)),u.x),u.y),
+             mix(mix(hash31(i+vec3(0,0,1)),hash31(i+vec3(1,0,1)),u.x), mix(hash31(i+vec3(0,1,1)),hash31(i+vec3(1,1,1)),u.x),u.y), u.z);
+}
+float fbm3(vec3 p){ float v=0., a=.5; for(int i=0;i<5;i++){ v+=a*noise3(p); p=p*2.07+vec3(1.7,9.2,3.3); a*=.5; } return v; }
+
+// ---------- stars ----------
+vec3 starLayer(vec2 uv, float seed, float sz){
+  vec2 id=floor(uv), gv=fract(uv)-.5; vec3 col=vec3(0);
+  for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){
+    vec2 o=vec2(x,y), cid=id+o;
+    float n=hash21(cid+seed);
+    if(n<.55) continue;
+    vec2 pos=o+hash22(cid*1.7+seed)-.5;
+    float d=length(gv-pos);
+    float b=pow(fract(n*731.7),6.)*1.4+.04;
+    float tw=.75+.25*sin(uT*(2.+5.*fract(n*91.3))+n*40.);
+    vec3 tint=mix(vec3(.62,.75,1.), vec3(1.,.82,.62), fract(n*13.7));
+    col+=tint*b*tw*(exp(-d*d/(sz*sz))+ .012*sz/(d*d+.002));
+  }
+  return col;
+}
+vec3 starfield(vec2 uv, float warp){
+  vec3 col=vec3(0);
+  // distant static stars
+  col+=starLayer(uv*120., 1.3, .045)*.55;
+  col+=starLayer(uv*60., 7.9, .05)*.5;
+  // flying layers
+  for(int i=0;i<5;i++){
+    float fi=float(i);
+    float z=fract(fi/5.+warp);
+    float scale=mix(26.,1.2,z);
+    float fade=smoothstep(0.,.35,z)*smoothstep(1.,.86,z);
+    col+=starLayer(uv*scale+fi*41.37, fi*13.1, .028)*fade*.9;
+  }
+  return col;
+}
+vec3 nebula(vec2 uv, float t){
+  float n1=fbm(uv*2.2+vec2(t*.02,-t*.015));
+  float n2=fbm(uv*4.5-vec2(t*.01,0.)+n1*1.3);
+  vec3 c=mix(vec3(.05,.03,.12), vec3(.25,.08,.06), smoothstep(.35,.8,n2));
+  c+=vec3(.05,.08,.2)*smoothstep(.5,.9,n1);
+  return c*smoothstep(.25,.85,n1*n2*1.9);
+}
+
+// ---------- galaxy ----------
+vec3 galaxy(vec2 uv){
+  vec2 p=uv/uGalZoom;
+  p=rot(-uGalTilt)*p;
+  p.y/=.42;
+  float r=length(p);
+  float a=atan(p.y,p.x);
+  float diff=uGalRot*(1.2/(r+.25));
+  float lr=log(r+1e-4);
+  float ph=2.*(a+diff) - lr*3.6;
+  float warpN=fbm(p*7.+vec2(uGalRot*.3,0.));
+  float arm=pow(.5+.5*cos(ph+warpN*2.2),2.5);
+  float dust=pow(.5+.5*cos(ph-.9+warpN*2.6),6.);
+  float disk=exp(-r*3.2);
+  float clumps=fbm(vec2(a*3.+diff*2., lr*6.)*2.+5.);
+  vec3 armCol=mix(vec3(.38,.55,1.), vec3(.95,.55,.85), smoothstep(.62,.85,clumps));
+  vec3 col=armCol*arm*disk*(0.5+1.4*clumps)*1.6;
+  col+=vec3(.55,.6,.9)*disk*.25;
+  col*=1.-.75*dust*smoothstep(.04,.2,r);
+  float core=exp(-r*r*90.)*3.2+exp(-r*9.)*.9;
+  col+=vec3(1.,.82,.58)*core;
+  // resolved stars inside the disk
+  vec2 sp=vec2(a+diff, lr*1.6)*vec2(40.,40.);
+  col+=starLayer(sp, 3.3, .07)*disk*arm*1.2;
+  // faint halo
+  col+=vec3(.25,.3,.55)*exp(-r*1.4)*.08;
+  return col;
+}
+
+// ---------- moon ----------
+vec3 craterField(vec3 q, float sc, vec3 Lq, out float rimMask){
+  vec3 p=q*sc; vec3 id=floor(p), f=fract(p);
+  float shade=0., alb=0.; rimMask=0.;
+  for(int z=-1;z<=1;z++) for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){
+    vec3 o=vec3(x,y,z);
+    vec3 h=hash33(id+o);
+    if(h.z<.35) continue;
+    vec3 c=o+h-f;
+    float rad=.18+.32*pow(fract(h.x*7.13),2.);
+    float d=length(c)/rad;
+    if(d>1.6) continue;
+    vec3 v=-c/max(length(c),1e-4);
+    float ld=dot(v,Lq);
+    float inside=smoothstep(1.,.75,d);
+    float rim=smoothstep(.7,1.,d)*smoothstep(1.35,1.,d);
+    shade+=inside*(ld*.55)*d;
+    shade-=rim*ld*.45;
+    alb+=inside*-.06+rim*.10;
+    rimMask=max(rimMask,rim);
+  }
+  return vec3(shade, alb, 0.);
+}
+
+vec4 moonCol(vec2 uv, out float coverage){
+  vec2 d=(uv-uMoonC)/uMoonR;
+  float l2=dot(d,d);
+  float pix=1.5/(uRes.y*uMoonR);
+  coverage=smoothstep(1.+pix,1.-pix,sqrt(l2));
+  vec3 L=normalize(vec3(.78,.42,.46));
+  if(l2>1.0) return vec4(0);
+  vec3 n=vec3(d, sqrt(1.-l2));
+  float ca=cos(uMoonRot), sa=sin(uMoonRot);
+  mat3 R=mat3(ca,0.,-sa, 0.,1.,0., sa,0.,ca);
+  // tilt the axis a little
+  mat3 Tl=mat3(1.,0.,0., 0.,cos(.2),sin(.2), 0.,-sin(.2),cos(.2));
+  vec3 q=Tl*(R*n);
+  vec3 Lq=Tl*(R*L);
+  float maria=smoothstep(.42,.62,fbm3(q*1.6+2.));
+  float alb=mix(.78,.36,maria);
+  alb*=.85+.3*fbm3(q*9.);
+  float rm;
+  vec3 c1=craterField(q,3.,Lq,rm);
+  vec3 c2=craterField(q,7.,Lq,rm);
+  vec3 c3=craterField(q,16.,Lq,rm);
+  vec3 c4=craterField(q,34.,Lq,rm);
+  float shade=c1.x*1.+c2.x*.8+c3.x*.6+c4.x*.4;
+  alb+=c1.y+c2.y+c3.y*.7+c4.y*.5;
+  // ray systems around a few young craters
+  float ndl=dot(n,L);
+  float light=smoothstep(-.08,.35,ndl);
+  float lit=clamp(light*(1.+shade*smoothstep(0.,.5,ndl+.15)*1.1),0.,2.);
+  vec3 col=vec3(alb)*lit*vec3(1.,.97,.93)*1.25;
+  // earthshine on the dark side
+  col+=vec3(.04,.05,.07)*alb*(1.-light);
+  // limb softening
+  col*=.75+.25*pow(n.z,.35);
+
+  // engraved title on the surface
+  float lon=atan(q.x,q.z), lat=asin(clamp(q.y,-1.,1.));
+  float lon0=-1.05;
+  vec2 tuv=vec2((lon-lon0)/1.25+.5, .5-lat/.42);
+  if(tuv.x>0.&&tuv.x<1.&&tuv.y>0.&&tuv.y<1.){
+    vec4 tx=texture2D(uTextTex,tuv);
+    float face=smoothstep(.0,.35,n.z);
+    col=mix(col, col*.55, tx.b*uTextGlow*face);           // etched groove
+    col+=vec3(1.,.93,.86)*tx.r*uTextGlow*face*1.6;        // core light
+    col+=vec3(1.,.55,.35)*tx.g*uTextGlow*face*.9;         // warm halo
+  }
+  return vec4(col,1.);
+}
+
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.); }
+
+void main(){
+  vec2 frag=gl_FragCoord.xy;
+  vec2 uv=(frag-.5*uRes)/uRes.y;
+  vec3 col=vec3(0);
+
+  if(uStar>0.){
+    col+=starfield(uv, uWarp)*uStar;
+    col+=nebula(uv*.9+vec2(.3,.1), uT)*.35*uStar;
+  }
+  if(uNeb>0.){
+    vec3 bg=starfield(uv*1.15, uWarp*.25)*.6;
+    float n=fbm(uv*2.+vec2(uT*.03,0.));
+    bg+=vec3(.20,.08,.05)*smoothstep(.45,.9,n)*exp(-length(uv-vec2(.1,-.25))*2.2);
+    bg+=vec3(.05,.05,.14)*smoothstep(.4,.9,fbm(uv*3.1-uT*.02))*.8;
+    bg+=vec3(.85,.42,.28)*.09*exp(-dot(uv-vec2(0.,-.02),uv-vec2(0.,-.02))*9.);
+    col+=bg*uNeb;
+  }
+  if(uGal>0.){
+    col+=galaxy(uv)*uGal/(1.+.35*max(uGalZoom-1.2,0.));
+  }
+  if(uMoon>0.){
+    vec3 bg=starfield(uv*.9, uWarp*.1)*.55;
+    // dust behind the moon
+    vec2 md=uv-uMoonC; float rr=length(md)/uMoonR;
+    float wisps=fbm(uv*3.+vec2(uT*.05,uT*.02));
+    float wisps2=fbm(uv*7.-vec2(uT*.08,0.)+wisps);
+    vec3 dustCol=mix(vec3(.10,.12,.2), vec3(.45,.38,.33), smoothstep(-.2,.6,dot(normalize(md+1e-4),vec2(.86,.5))));
+    float halo=exp(-max(rr-1.,0.)*2.4)*smoothstep(.95,1.05,rr);
+    bg+=dustCol*smoothstep(.35,.85,wisps*wisps2*1.8)*(.25+halo*.9);
+    bg+=vec3(.55,.62,.85)*exp(-max(rr-1.,0.)*9.)*.10*smoothstep(.98,1.02,rr);
+    float cov;
+    vec4 m=moonCol(uv,cov);
+    vec3 scene=mix(bg, m.rgb, cov);
+    // thin clouds drifting in front
+    float front=fbm(uv*vec2(2.2,5.)+vec2(uT*.12,0.));
+    float fmask=smoothstep(.55,.85,front)*exp(-abs(rr-1.05)*2.)*.55;
+    scene+=vec3(.5,.52,.6)*fmask*.35;
+    col+=scene*uMoon;
+  }
+  if(uFlare>0.){
+    vec2 fp=uMoonC+uMoonR*normalize(vec2(.62,.78))*1.0;
+    vec2 dd=uv-fp; float r=length(dd);
+    float core=exp(-r*r*900.)*3.+.010/(r*r+.0015)*.12;
+    float streak=exp(-abs(dd.y)*260.)*exp(-abs(dd.x)*3.2)*1.4;
+    float ang=atan(dd.y,dd.x);
+    float rays=pow(abs(cos(ang*6.)),60.)*exp(-r*11.)*.45;
+    vec3 fc=vec3(1.,.86,.72)*(core+rays)+vec3(.6,.75,1.)*streak;
+    col+=fc*uFlare;
+    // ghosts
+    vec2 g=-dd*1.4; float gh=exp(-length(uv-(fp+g))*40.)*.12;
+    col+=vec3(.5,.8,1.)*gh*uFlare;
+  }
+  col+=vec3(1.,.9,.78)*uFlash;
+
+  col=aces(col*1.05);
+  col=pow(col,vec3(.92));
+  // vignette & grain
+  float v=smoothstep(1.15,.25,length(uv*vec2(1.25,1.)));
+  col*=mix(.55,1.,v);
+  col+=(hash21(frag+fract(uT*7.13)*100.)-.5)*.022;
+  col*=uFade;
+  gl_FragColor=vec4(col,1.);
+}
+</script>
+
+<script>
+// ---------- helpers ----------
+const W = 1080, H = 1920;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// Claude spark: tapered rays of slightly irregular length
+function sparkPath() {
+  const R = rng(42), rays = 12; let d = "";
+  for (let i = 0; i < rays; i++) {
+    const a = i / rays * Math.PI * 2 + (R() - .5) * .12, len = 38 + R() * 10, w = .17;
+    const pts = [[a - w, 7], [a, len], [a + w, 7], [a + Math.PI / rays, 4]];
+    pts.forEach(([aa, r], k) => { d += (i === 0 && k === 0 ? "M" : "L") + (Math.cos(aa) * r).toFixed(2) + " " + (Math.sin(aa) * r).toFixed(2) + " "; });
+  }
+  return d + "Z";
+}
+const SPARK = sparkPath();
+document.querySelectorAll("svg.spark").forEach(s => { s.innerHTML = `<path d="${SPARK}" fill="#D97757" stroke="#D97757" stroke-width="2.4" stroke-linejoin="round"/>`; });
+
+// ---------- WebGL ----------
+const cv = document.getElementById("gl");
+const gl = cv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false });
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, document.getElementById("vs").textContent));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, document.getElementById("fs").textContent));
+gl.linkProgram(prog); if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, "aPos"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+const U = {}; ["uRes", "uT", "uStar", "uWarp", "uGal", "uGalZoom", "uGalRot", "uGalTilt", "uFlash", "uNeb", "uMoon", "uMoonR", "uMoonRot", "uTextGlow", "uFlare", "uFade", "uMoonC", "uTextTex"].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+
+// text texture for the lunar engraving: R = sharp core, G = soft halo, B = groove
+function buildTextTex() {
+  const c = document.createElement("canvas"); c.width = 2048; c.height = 512;
+  const x = c.getContext("2d");
+  const draw = (blur, color, alpha) => {
+    const t = document.createElement("canvas"); t.width = c.width; t.height = c.height;
+    const k = t.getContext("2d");
+    k.font = '300 210px "InterD"'; k.textAlign = "center"; k.textBaseline = "middle";
+    k.filter = blur ? `blur(${blur}px)` : "none"; k.fillStyle = "#fff"; k.globalAlpha = alpha;
+    k.fillText("Claude Opus 5.5", c.width / 2, c.height / 2 + 10);
+    if (blur) k.fillText("Claude Opus 5.5", c.width / 2, c.height / 2 + 10);
+    x.globalCompositeOperation = "lighter"; x.globalAlpha = 1;
+    const tmp = document.createElement("canvas"); tmp.width = c.width; tmp.height = c.height;
+    const tk = tmp.getContext("2d"); tk.drawImage(t, 0, 0); tk.globalCompositeOperation = "source-in"; tk.fillStyle = color; tk.fillRect(0, 0, c.width, c.height);
+    x.drawImage(tmp, 0, 0);
+  };
+  x.fillStyle = "#000"; x.fillRect(0, 0, c.width, c.height);
+  draw(0, "#ff0000", 1);
+  draw(22, "#00ff00", 1);
+  draw(5, "#0000ff", 1);
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+}
+
+// ---------- particles (2D, additive) ----------
+const fx = document.getElementById("fx"), fc = fx.getContext("2d");
+function glowSprite(rgb) {
+  const c = document.createElement("canvas"); c.width = c.height = 128; const k = c.getContext("2d");
+  const g = k.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, `rgba(255,255,255,1)`); g.addColorStop(.12, `rgba(${rgb},.9)`); g.addColorStop(.35, `rgba(${rgb},.22)`); g.addColorStop(1, `rgba(${rgb},0)`);
+  k.fillStyle = g; k.fillRect(0, 0, 128, 128); return c;
+}
+const SPR = { blue: glowSprite("150,185,255"), warm: glowSprite("255,190,140"), white: glowSprite("230,235,255"), orange: glowSprite("217,119,87") };
+const r1 = rng(7);
+const fly = Array.from({ length: 260 }, () => ({ x: (r1() - .5) * 2.2, y: (r1() - .5) * 3.6, z: r1(), s: .4 + r1() * 1.6, c: r1() < .25 ? "warm" : (r1() < .5 ? "white" : "blue"), tw: r1() * 6 }));
+const r2 = rng(99);
+const orb = Array.from({ length: 2600 }, () => {
+  const arm = r2() < .5 ? 0 : Math.PI; const r = .02 + Math.pow(r2(), 1.6) * .6;
+  const spread = (r2() - .5) * (.5 + r * .6);
+  return { r, a0: arm + Math.log(r) * 1.8 + spread, s: .3 + r2() * 1.2, c: r2() < .2 ? "warm" : (r2() < .55 ? "white" : "blue"), tw: r2() * 6 };
+});
+const r3 = rng(5);
+const dust = Array.from({ length: 160 }, () => ({ x: (r3() - .5) * .8, y: (r3() - .5) * 1.1, vx: .006 + r3() * .02, vy: (r3() - .5) * .006, s: .3 + r3() * .9, tw: r3() * 6 }));
+const toPx = (x, y) => [x * H + W / 2, H / 2 - y * H];
+function sprite(img, x, y, size, a) { if (a <= .003) return; fc.globalAlpha = Math.min(1, a); fc.drawImage(img, x - size / 2, y - size / 2, size, size); }
+
+// ---------- timeline ----------
+function state(t) {
+  const S = {};
+  // 0–3 s: starfield, forward drift; 3–6.4 galaxy; 6–9 interface; 9–12 moon; 12–15 end card
+  S.star = ss(0, 1.2, t) * (1 - ss(4.2, 5.4, t));
+  S.warp = t * .07 + ss(2.4, 4.0, t) * .12;
+  S.gal = ss(2.6, 4.2, t) * (1 - ss(6.05, 6.35, t));
+  const gz = easeInOut(clamp((t - 2.6) / 3.6));
+  S.galZoom = lerp(.18, 1.25, gz) * (1 + Math.pow(ss(5.5, 6.35, t), 2) * 5.5);
+  S.galRot = t * .55;
+  S.galTilt = .55 - t * .03;
+  S.flash = Math.pow(ss(5.9, 6.25, t), 2) * (1 - ss(6.25, 6.95, t)) * 1.1;
+  S.neb = ss(6.2, 6.9, t) * (1 - ss(8.7, 9.3, t));
+  S.moon = ss(8.85, 9.6, t);
+  const mp = easeOut(clamp((t - 8.9) / 3.2));
+  S.moonR = lerp(1.25, .27, mp) * lerp(1, .84, easeInOut(clamp((t - 12) / 3)));
+  S.moonC = [lerp(.02, 0, mp), lerp(-1.05, -.03, mp) - easeInOut(clamp((t - 12) / 3)) * .17];
+  S.moonRot = -1.05 + (t - 11.0) * .085;
+  S.textGlow = ss(10.0, 11.0, t) * (1 - ss(12.2, 12.9, t));
+  S.flare = ss(12.2, 13.3, t) * (1 - ss(14.2, 15, t) * .6);
+  S.fade = ss(0, .5, t) * (1 - ss(14.25, 15.0, t));
+  return S;
+}
+
+function render(t) {
+  const S = state(t);
+  gl.viewport(0, 0, W, H);
+  gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uT, t);
+  gl.uniform1f(U.uStar, S.star); gl.uniform1f(U.uWarp, S.warp);
+  gl.uniform1f(U.uGal, S.gal); gl.uniform1f(U.uGalZoom, S.galZoom); gl.uniform1f(U.uGalRot, S.galRot); gl.uniform1f(U.uGalTilt, S.galTilt);
+  gl.uniform1f(U.uFlash, S.flash); gl.uniform1f(U.uNeb, S.neb);
+  gl.uniform1f(U.uMoon, S.moon); gl.uniform1f(U.uMoonR, S.moonR); gl.uniform2f(U.uMoonC, S.moonC[0], S.moonC[1]);
+  gl.uniform1f(U.uMoonRot, S.moonRot); gl.uniform1f(U.uTextGlow, S.textGlow); gl.uniform1f(U.uFlare, S.flare); gl.uniform1f(U.uFade, S.fade);
+  gl.uniform1i(U.uTextTex, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  // particles
+  fc.setTransform(1, 0, 0, 1, 0, 0); fc.globalCompositeOperation = "source-over"; fc.globalAlpha = 1;
+  fc.clearRect(0, 0, W, H); fc.globalCompositeOperation = "lighter";
+  const fade = S.fade;
+  // forward-flying bright particles (0–4.5 s)
+  const flyA = ss(.4, 2.2, t) * (1 - ss(3.6, 4.6, t)) * fade;
+  if (flyA > 0) for (const p of fly) {
+    const z = 1 - ((p.z + t * .16) % 1); const zz = .08 + z * 1.6;
+    const [x, y] = toPx(p.x / zz * .25, p.y / zz * .25);
+    const near = 1 - z;
+    const a = flyA * ss(0, .25, near) * ss(1, .85, near) * (.6 + .4 * Math.sin(t * 3 + p.tw));
+    sprite(SPR[p.c], x, y, (6 + 34 * near * near) * p.s, a);
+  }
+  // orbiting particles + neural links around the galaxy (3–6.3 s)
+  const orbA = S.gal * fade;
+  if (orbA > 0) {
+    const c = Math.cos(S.galTilt), s = Math.sin(S.galTilt), z = S.galZoom;
+    const pts = [];
+    for (let i = 0; i < orb.length; i++) {
+      const p = orb[i];
+      const a = p.a0 - S.galRot * (1.2 / (p.r + .25)) * .5;
+      let gx = Math.cos(a) * p.r, gy = Math.sin(a) * p.r * .42;
+      const x = (c * gx - s * gy) * z, y = (s * gx + c * gy) * z;
+      const [px, py] = toPx(x, y); pts.push([px, py]);
+      if (px < -60 || px > W + 60 || py < -60 || py > H + 60) continue;
+      const al = orbA * (.35 + .65 * (.5 + .5 * Math.sin(t * 4 + p.tw))) * (1 - Math.exp(-p.r * 30));
+      sprite(SPR[p.c], px, py, Math.min(60, (5 + 7 * p.s) * Math.sqrt(z / .6)), al * .8);
+    }
+    fc.globalAlpha = orbA * .16; fc.strokeStyle = "rgba(170,200,255,1)"; fc.lineWidth = 1.2; fc.beginPath();
+    for (let i = 0; i < 900; i += 3) {
+      const a = pts[i], b = pts[i + 1], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (d < 140 && d > 4) { fc.moveTo(a[0], a[1]); fc.lineTo(b[0], b[1]); }
+    }
+    fc.stroke();
+    // orbit rings — a hint of structure / computation
+    fc.globalAlpha = orbA * .22; fc.lineWidth = 1.5;
+    for (let k = 0; k < 4; k++) {
+      const rr = (.12 + k * .11) * z * H; const [cx, cy] = toPx(0, 0);
+      fc.save(); fc.translate(cx, cy); fc.rotate(-S.galTilt); fc.scale(1, .42);
+      fc.setLineDash([2 + k * 3, 18 + k * 6]); fc.lineDashOffset = -t * (60 - k * 10);
+      fc.strokeStyle = k % 2 ? "rgba(255,190,150,1)" : "rgba(160,190,255,1)";
+      fc.beginPath(); fc.arc(0, 0, rr, 0, Math.PI * 2); fc.stroke(); fc.restore();
+    }
+    fc.setLineDash([]);
+  }
+  // drifting dust motes near the moon (9–15 s)
+  const dA = S.moon * fade;
+  if (dA > 0) for (const p of dust) {
+    const x = ((p.x + p.vx * (t - 9) + .4) % .8) - .4, y = p.y + p.vy * (t - 9);
+    const [px, py] = toPx(x, y);
+    sprite(SPR.white, px, py, 10 * p.s + 4, dA * .45 * (.5 + .5 * Math.sin(t * 2 + p.tw)));
+  }
+  fc.globalCompositeOperation = "source-over"; fc.globalAlpha = 1;
+
+  // ---------- DOM layers ----------
+  // title 0–3.6 s
+  const tIn = ss(.8, 2.3, t), tOut = ss(3.0, 3.7, t);
+  const title = document.getElementById("titleL");
+  title.style.opacity = (tIn * (1 - tOut)).toFixed(4);
+  title.style.filter = `blur(${((1 - tIn) * 14 + tOut * 18).toFixed(2)}px)`;
+  title.style.transform = `scale(${(1.06 - tIn * .06 + tOut * .5 + t * .004).toFixed(4)})`;
+  document.getElementById("titleText").style.letterSpacing = `${lerp(.42, .12, easeOut(tIn)).toFixed(4)}em`;
+  document.getElementById("titleSub").style.opacity = ss(1.6, 2.6, t).toFixed(3);
+
+  // interface 6.3–9.3 s
+  const uIn = easeOut(clamp((t - 6.25) / .9)), uOut = easeInOut(clamp((t - 8.65) / .7));
+  const ui = document.getElementById("ui");
+  ui.style.opacity = (uIn * (1 - uOut)).toFixed(4);
+  ui.style.filter = `blur(${((1 - uIn) * 16 + uOut * 10).toFixed(2)}px)`;
+  document.getElementById("uiInner").style.transform =
+    `translateY(${((1 - uIn) * 60 - uOut * 40).toFixed(2)}px) rotateX(${((1 - uIn) * 18 + 4 - (t - 6.3) * .9).toFixed(3)}deg) scale(${(lerp(.92, 1, uIn) + (t - 6.3) * .012 - uOut * .35).toFixed(4)})`;
+  const prompt = "Explain the universe in one sentence";
+  const typeP = clamp((t - 6.95) / 1.35);
+  const typed = document.getElementById("typed");
+  const n = Math.round(prompt.length * typeP);
+  if (n === 0) { typed.textContent = "How can I help you today?"; typed.className = "ph"; }
+  else { typed.textContent = prompt.slice(0, n); typed.className = ""; }
+  document.getElementById("caret").style.opacity = (n > 0 && n < prompt.length) ? 1 : (Math.floor(t * 2.4) % 2 ? .1 : 1);
+  const sendGlow = ss(8.25, 8.45, t) * (1 - ss(8.55, 8.9, t));
+  const send = document.getElementById("send");
+  send.style.boxShadow = `0 0 ${(10 + sendGlow * 40).toFixed(1)}px rgba(217,119,87,${(.25 + sendGlow * .6).toFixed(3)})`;
+  send.style.transform = `scale(${(1 - sendGlow * .08).toFixed(3)})`;
+
+  // end card 12.6–15 s
+  const eIn = easeOut(clamp((t - 12.7) / 1.1));
+  const end = document.getElementById("end");
+  end.style.opacity = (eIn * S.fade).toFixed(4);
+  end.style.filter = `blur(${((1 - eIn) * 12).toFixed(2)}px)`;
+  end.style.transform = `translateY(${((1 - eIn) * 30).toFixed(2)}px) scale(${(1 + (t - 12.7) * .012).toFixed(4)})`;
+  document.getElementById("endLogo").style.transform = `rotate(${((t - 12.7) * 14).toFixed(2)}deg) scale(${lerp(.6, 1, eIn).toFixed(3)})`;
+  document.getElementById("endTitle").style.letterSpacing = `${lerp(.3, .08, eIn).toFixed(4)}em`;
+  document.getElementById("endSub").style.opacity = ss(13.4, 14.1, t).toFixed(3);
+
+  gl.finish();
+}
+
+window.ready = (async () => {
+  await document.fonts.load('200 92px "InterD"'); await document.fonts.load('300 210px "InterD"');
+  await document.fonts.load('400 40px "InterD"'); await document.fonts.ready;
+  buildTextTex();
+  return true;
+})();
+window.render = render;
+</script>
+</body>
+</html>
