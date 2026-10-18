@@ -1,0 +1,201 @@
+<title>Визитка Алексея Морозова</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+  /* Одна колонка: имя крупно, затем описание, три проекта столбиком, кнопка Telegram. Тёмная тема без переключателя. */
+  :root {
+    --bg: #0f1114;
+    --surface: #171a1f;
+    --line: #262b32;
+    --fg: #ecebe6;
+    --muted: #a3a9b2;
+    --accent: #8cc7b3;
+    --accent-ink: #0c1512;
+    --font-display: "Unbounded", "Onest", system-ui, sans-serif;
+    --font-body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.55;
+    padding-block: 56px 40px;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+    -webkit-text-size-adjust: 100%;
+  }
+
+  main {
+    max-width: 640px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(40px, 12vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 24px;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+
+  .lead {
+    font-size: clamp(18px, 4.6vw, 21px);
+    color: var(--muted);
+    max-width: 34em;
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .projects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .project {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    min-width: 0;
+  }
+
+  .project h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 19px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+  }
+
+  .project p {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tags li {
+    font-size: 13px;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 12px;
+  }
+
+  .cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 14px 24px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    font-size: 18px;
+    text-decoration: none;
+  }
+
+  .cta svg { width: 22px; height: 22px; fill: currentColor; flex: none; }
+  .cta:active { transform: translateY(1px); }
+  .cta:hover { filter: brightness(1.06); }
+  .cta:focus-visible, .project a:focus-visible {
+    outline: 3px solid var(--fg);
+    outline-offset: 3px;
+  }
+
+  .handle { margin: 12px 0 0; text-align: center; color: var(--muted); font-size: 15px; }
+
+  footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 20px; }
+
+  @media (min-width: 640px) {
+    body { padding-block: 96px 64px; }
+    main { gap: 64px; }
+    .cta { display: inline-flex; align-self: flex-start; }
+    .handle { text-align: left; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cta { transition: filter 0.15s ease, transform 0.1s ease; }
+  }
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Веб-разработчик · Казань</p>
+    <h1>Алексей Морозов</h1>
+    <p class="lead">Делаю быстрые сайты и небольшие сервисы для людей, которым некогда разбираться в технике. От идеи до запуска один человек, без посредников.</p>
+  </header>
+
+  <section aria-labelledby="projects-title">
+    <h2 id="projects-title">Три проекта</h2>
+    <ul class="projects">
+      <li class="project">
+        <h3>Расписание для студии йоги</h3>
+        <p>Запись на занятия с телефона и напоминания в Telegram. Администратор перестал вести журнал вручную.</p>
+        <ul class="tags"><li>React</li><li>Node.js</li><li>Telegram Bot</li></ul>
+      </li>
+      <li class="project">
+        <h3>Каталог для мастерской керамики</h3>
+        <p>Лёгкий магазин на двадцать позиций. Страница открывается меньше чем за секунду на мобильном интернете.</p>
+        <ul class="tags"><li>HTML</li><li>CSS</li><li>Оплата онлайн</li></ul>
+      </li>
+      <li class="project">
+        <h3>Учёт расходов для семьи</h3>
+        <p>Мини-приложение: вносишь трату за пять секунд, в конце месяца получаешь сводку по категориям.</p>
+        <ul class="tags"><li>TypeScript</li><li>SQLite</li><li>PWA</li></ul>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="contact-title">
+    <h2 id="contact-title">Связаться</h2>
+    <a class="cta" href="https://t.me/username" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.6c.3-1.2-.9-2.1-2-1.7L2.6 9.6c-1.2.5-1.2 2.2.1 2.6l4.3 1.4 1.7 5.3c.3 1 1.5 1.3 2.3.6l2.4-2.2 4.4 3.2c.9.7 2.2.2 2.4-.9l2.7-15zM9 13.3l8.6-5.4c.3-.2.5.2.3.4l-7 6.3-.3 3-1.6-4.3z"/></svg>
+      Написать в Telegram
+    </a>
+    <p class="handle">@username</p>
+  </section>
+
+  <footer>Обычно отвечаю в течение дня.</footer>
+</main>
